@@ -413,12 +413,7 @@ function Remove-Edge {
     $edge.PackageFullName | ForEach-Object {Remove-AppxPackage -package $_}
 }
      
-
-# Chame a função para desativar o Windows Update completamente
-Disable-WindowsUpdateCompletely
-# Chame a função Disable-WindowsUpdate para desativar as atualizações do Windows
-Disable-WindowsUpdate
-
+ 
  # Função para mostrar o submenu com uma lista de programas para baixar
 function programas {
     # Verificar se o Chocolatey já está instalado
@@ -477,8 +472,6 @@ function programas {
     } while ($true)
 }
 
-# Exemplo de uso da função
-Show-DownloadMenu
 
 # Menu de opções
 do {
