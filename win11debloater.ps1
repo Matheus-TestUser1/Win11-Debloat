@@ -20,18 +20,19 @@ function CreateSystemRestorePoint {
     $restorePoint = Get-ComputerRestorePoint
     if ($restorePoint -eq $null)  {
         Write-Host "Criando um ponto de restauração para sua segurança..."
-        Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
+        New-ComputerRestorePoint -Description $description -RestorePointType MODIFY_SETTINGS
     } else {
         Write-Host "Um ponto de restauração já existe. Deseja criar outro ponto de restauração? (S/N)"
         $choice = Read-Host
         if ($choice -eq "S" -or $choice -eq "s") {
             Write-Host "Criando um novo ponto de restauração..."
-            Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
+            New-ComputerRestorePoint -Description $description -RestorePointType MODIFY_SETTINGS
         } else {
             Write-Host "Continuando sem criar um novo ponto de restauração..."
         }
     }
 }
+
 
 
 # Função para exibir mensagens de log
