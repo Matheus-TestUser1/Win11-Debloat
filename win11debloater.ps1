@@ -1,18 +1,11 @@
-﻿# Verificar se o script está sendo executado como administrador
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
-    [Void] [System.Windows.Forms.MessageBox]::Show(
-        "Você não está executando este script como administrador! Você deve usar um script em lote para iniciar este script!", 
-        "", 
-        [System.Windows.Forms.MessageBoxButtons]::OK, 
-        [System.Windows.Forms.MessageBoxIcon]::Error
-    )
-    Exit
-}
+﻿
 
-
-function Log($message) {
-    $timeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    Write-Host "$timeStamp - $message"
+# Verificar se o script está sendo executado como function CheckIfAdmin {
+    $currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    if (!($currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))) {
+        [System.Windows.Forms.MessageBox]::Show("Você não está executando este script como administrador! Você deve executar este script como administrador.", "", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        Exit
+    }
 }
 
 function CreateSystemRestorePoint {
