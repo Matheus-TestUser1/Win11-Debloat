@@ -1,6 +1,7 @@
 ﻿
 
-# Verificar se o script está sendo executado como function CheckIfAdmin {
+# Verificar se o script está sendo executado como
+ function CheckIfAdmin {
     $currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     if (!($currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))) {
         [System.Windows.Forms.MessageBox]::Show("Você não está executando este script como administrador! Você deve executar este script como administrador.", "", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
@@ -26,6 +27,10 @@ function CreateSystemRestorePoint {
     }
 }
 
+
+function Log($message) { 
+     $timeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" 
+     Write-Host "$timeStamp - $message"
 
 # Função para exibir mensagens de log
 function Log($message) {
@@ -399,38 +404,15 @@ function Apply-WindowsTweaks() {
 
     Stop-Process -Name explorer
     Log("Tweaks are done!")
+}
+
+function Remove-Edge {
+
+function Remove-Edge {
+    $edge = Get-AppxPackage *edge*
+    $edge.PackageFullName | ForEach-Object {Remove-AppxPackage -package $_}
 }
-
-# Função para mostrar o submenu com uma lista de programas para baixar
-
-function Disable-WindowsUpdate {
-     # Desativar o serviço do Windows Update
-    Stop-Service -Name wuauserv -Force
-    Set-Service -Name wuauserv -StartupType Disabled
-  Stop-Service -Name WaaSMedicSvc -Force
-    Set-Service -Name WaaSMedicSvc -StartupType Disabled
-  Stop-Service -Name dosvc -Force
-    Set-Service -Name dosvc -StartupType Disabled
- Stop-Service -Name BITS -Force
-    Set-Service -Name BITS -StartupType Disabled
-    # Desativar o serviço de Agente de Atualização do Windows
-    Stop-Service -Name UsoSvc -Force
-    Set-Service -Name UsoSvc -StartupType Disabled
-
-    # Desativar a tarefa agendada de atualização automática
-    Unregister-ScheduledTask -TaskName "\Microsoft\Windows\WindowsUpdate\Automatic App Update" -Confirm:$false
-
-    # Desativar a tarefa agendada de reinicialização após a instalação de atualizações
-    Unregister-ScheduledTask -TaskName "\Microsoft\Windows\UpdateOrchestrator\Reboot" -Confirm:$false
-
-    # Desativar a política de grupo que controla o Windows Update (se existir)
-    Remove-GPRegistryValue -Name "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -ValueName "AUOptions" -Confirm:$false
-
-    # Desativar a política de grupo que controla a reinicialização automática após a instalação de atualizações (se existir)
-    Remove-GPRegistryValue -Name "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -ValueName "NoAutoRebootWithLoggedOnUsers" -Confirm:$false
-
-    Write-Host "O Windows Update foi desativado completamente."
-}
+     
 
 # Chame a função para desativar o Windows Update completamente
 Disable-WindowsUpdateCompletely
@@ -511,7 +493,7 @@ do {
     Write-Host "7. conclusao"
     Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
     Write-Host "9. Hide Search"
-    Write-Host "10.Desativar Windows Update"
+    Write-Host "10.Remover Edge"
     Write-Host "11.Programas"
     Write-Host "0. Sair"
     
@@ -527,7 +509,7 @@ do {
         "7" { Apply-WindowsTweaks }
         "8" { DisableBackgroundAppAccess }
         "9" { hidesearch }
-        "10" { Disable-WindowsUpdate }
+        "10" { Remove-Edge }
         "11" { programas }
         "0" { break }
         default { Write-Host "Escolha inválida, tente novamente." }
