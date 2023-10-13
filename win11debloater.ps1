@@ -194,8 +194,7 @@ function Disable-Services() {
 # Função para remover bloatware
 function Remove-Bloatware() {
     Log("Removendo bloatware, aguarde...")
-    $BloatwareList = @(
-       "Microsoft.MicrosoftEdge"
+    $BloatwareList = @(
         "Microsoft.BingNews"
         "Microsoft.BingWeather"
         "Microsoft.GetHelp"
