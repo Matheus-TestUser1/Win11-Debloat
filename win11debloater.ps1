@@ -1,4 +1,4 @@
-﻿If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
+If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
     [Void] [System.Windows.Forms.MessageBox]::Show(
         "Você não está executando este script como administrador! Você deve usar um script em lote para iniciar este script!", 
         "", 
@@ -407,6 +407,12 @@ function Apply-WindowsTweaks() {
     Log("Tweaks are done!")
 }
 
+<<<<<<< HEAD
+
+function Disable-WindowsUpdate {
+    
+
+=======
 function Remove-Edge() {
         Log("Removing Microsoft Edge...")
     Get-AppxPackage -AllUsers *Microsoft.MicrosoftEdge* | Remove-AppxPackage -ErrorAction SilentlyContinue
@@ -415,6 +421,7 @@ function Remove-Edge() {
 }
      
  
+>>>>>>> 0a4c472b7d81d6824323d6c8bde939cae7543854
  # Função para mostrar o submenu com uma lista de programas para baixar
 function programas {
     # Verificar se o Chocolatey já está instalado
@@ -435,6 +442,7 @@ function programas {
         Write-Host "2. Google Chrome"
         Write-Host "3. WinRar"
         Write-Host "4. Firefox"
+        Write-Host "5. SimpleWall"
         Write-Host "0. Voltar"
 
         $choice = Read-Host "Digite o número da opção e pressione Enter"
@@ -464,6 +472,12 @@ function programas {
                 Write-Host "Programa Firefox baixado e instalado com sucesso!"
                 Read-Host "Pressione Enter para continuar..."
             }
+            "5" {
+                choco install SimpleWall -y
+                Write-Host "Baixando o simplewall..."
+                Write-Host "Programa simplewall baixado e instalado com sucesso!"
+                Read-Host "Pressione Enter para continuar..."
+            }
             "0" { return }
             default {
                 Write-Host "Escolha inválida, tente novamente."
@@ -477,6 +491,7 @@ function programas {
 # Menu de opções
 do {
     Clear-Host
+    Write-Host "Windows Debloater Script" -ForegroundColor Cyan
     Write-Host "Escolha uma opção:"
     Write-Host "1. Desabilitar Telemetria"
     Write-Host "2. Desabilitar Histórico de Atividades e Rastreamento de Localização"
