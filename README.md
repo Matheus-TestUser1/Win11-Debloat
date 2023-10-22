@@ -14,9 +14,10 @@ iex (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Matheus-TestUser1
  # Verificação de Segurança
 
 Este script é seguro de usar. Você pode verificar a segurança do arquivo executável por meio do serviço VirusTotal.
-Recursos
 
-O Win11Debloater oferece os seguintes recursos:
+ # Recursos
+
+O Win11Debloater oferece os seguintes recursos
 
     Remoção de telemetria do Windows.
     Desativação de tarefas e serviços indesejados.
