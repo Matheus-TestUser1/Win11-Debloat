@@ -1,6 +1,6 @@
 If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
     [Void] [System.Windows.Forms.MessageBox]::Show(
-        "Voc� n�o est� executando este script como administrador! Voc� deve usar este script como administrador!", 
+        "Você não está executando este script como administrador! Você deve usar este script como administrador!", 
         "", 
         [System.Windows.Forms.MessageBoxButtons]::OK, 
         [System.Windows.Forms.MessageBoxIcon]::Error
@@ -8,19 +8,19 @@ If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     Exit
 }
 
-$description = "Ponto de restaura��o criado por script PowerShell"
+$description = "Ponto de restauração criado por script PowerShell"
 $restorePoint = Get-ComputerRestorePoint
 if ($restorePoint -eq $null)  {
-    Write-Host "Criando um ponto de restaura��o para sua seguran�a..."
+    Write-Host "Criando um ponto de restauração para sua segurança..."
     Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
 } else {
-    Write-Host "Um ponto de restaura�ao ja existe. Deseja criar outro ponto de restaura��o? (S/N)"
+    Write-Host "Um ponto de restauraçao ja existe. Deseja criar outro ponto de restauração? (S/N)"
     $choice = Read-Host
     if ($choice -eq "S" -or $choice -eq "s") {
-        Write-Host "Criando um novo ponto de restaura��o..."
+        Write-Host "Criando um novo ponto de restauração..."
         Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
     } else {
-        Write-Host "Continuando sem criar um novo ponto de restaura��o..."
+        Write-Host "Continuando sem criar um novo ponto de restauração..."
     }
 }
 
@@ -32,18 +32,18 @@ function Log($message) {
 
 
 
-# Função para exibir mensagens de log
+# FunÃ§Ã£o para exibir mensagens de log
 function Log($message) {
     Write-Host $message
 }
 		
-# Função para exibir mensagens de erro
+# FunÃ§Ã£o para exibir mensagens de erro
 function Error($message) {
  
     Write-Host "ERRO: $message" -ForegroundColor Red
 }
 
-# Função para desabilitar telemetria
+# FunÃ§Ã£o para desabilitar telemetria
 function Disable-Telemetry() {
     Log("Disabling Telemetry...")
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" -Name "AllowTelemetry" -Type DWord -Value 0
@@ -58,7 +58,7 @@ function Disable-Telemetry() {
     Log("Telemetry has been disabled!")
 }
 
-# Função para desabilitar histórico de atividades e rastreamento de localização
+# FunÃ§Ã£o para desabilitar histÃ³rico de atividades e rastreamento de localizaÃ§Ã£o
 function Disable-PrivacySettings() {
     Log("Disabling Activity History...")
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "EnableActivityFeed" -Type DWord -Value 0
@@ -106,7 +106,7 @@ function Disable-PrivacySettings() {
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance" -Name "fAllowToGetHelp" -Type DWord -Value 0
 }
 
-# Função para desabilitar serviços específicos
+# FunÃ§Ã£o para desabilitar serviÃ§os especÃ­ficos
 function Disable-Services() {
     Log("Disabling specified services...")
     $Services = @(
@@ -174,10 +174,10 @@ function Disable-Services() {
         #"AppReadiness" # App Readiness
     )
 	
-        # Adicione os serviços que você deseja desabilitar aqui
+        # Adicione os serviÃ§os que vocÃª deseja desabilitar aqui
     
 
-    # Desabilitar os serviços listados
+    # Desabilitar os serviÃ§os listados
     foreach ($Service in $Services) {
         Get-Service -Name $Service -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled
         if ($Service.Status -match "Running") {
@@ -189,7 +189,7 @@ function Disable-Services() {
     Log("Specified services have been disabled.")
 }
 
-# Função para remover bloatware
+# FunÃ§Ã£o para remover bloatware
 function Remove-Bloatware() {
     Log("Removendo bloatware, aguarde...")
 
@@ -212,12 +212,12 @@ function Remove-Bloatware() {
         "Microsoft.WindowsFeedbackHub"
         "Microsoft.WindowsMaps"
         "Microsoft.WindowsSoundRecorder"
-        #"Microsoft.YourPhone" # Realmente útil
+        #"Microsoft.YourPhone" # Realmente Ãºtil
         "Microsoft.ZuneMusic"
         "Microsoft.ZuneVideo"
         "MicrosoftTeams"
         "ClipChamp.ClipChamp"
-        # Adicione mais aplicativos de bloatware à lista, se necessário
+        # Adicione mais aplicativos de bloatware Ã  lista, se necessÃ¡rio
     )
     foreach ($Bloat in $BloatwareList) {
         if ((Get-AppxPackage -Name $Bloat).NonRemovable -eq $false) {
@@ -227,7 +227,7 @@ function Remove-Bloatware() {
                 Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $Bloat | Remove-AppxProvisionedPackage -Online -ErrorAction Stop
                 Log("$Bloat foi removido com sucesso")
             } catch {
-                Error("Falha ao remover $Bloat, exceção: $($_.Exception.Message)")
+                Error("Falha ao remover $Bloat, exceÃ§Ã£o: $($_.Exception.Message)")
             }
         }
 
@@ -236,7 +236,7 @@ function Remove-Bloatware() {
 }
 
 
-	# Função para desabilitar o acesso de aplicativos em segundo plano
+	# FunÃ§Ã£o para desabilitar o acesso de aplicativos em segundo plano
 function DisableBackgroundAppAccess() {
     Log("Disabling Background application access...")
     Get-ChildItem -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" | ForEach-Object {
@@ -250,7 +250,7 @@ function DisableBackgroundAppAccess() {
     Log("Disabled Background application access")
 }
 
-# Função para desabilitar a pesquisa do Bing no Menu Iniciar
+# FunÃ§Ã£o para desabilitar a pesquisa do Bing no Menu Iniciar
 function DisableBingSearchInStartMenu() {
     Log("Disabling Bing Search in Start Menu...")
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -Type DWord -Value 0
@@ -264,13 +264,13 @@ function DisableBingSearchInStartMenu() {
     Set-Service "WSearch" -StartupType Disabled
 }
 
-# Função para esconder a barra de pesquisa da barra de tarefas
+# FunÃ§Ã£o para esconder a barra de pesquisa da barra de tarefas
 function hidesearch() {
     Log("Hiding Taskbar Search icon / box...")
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 0
 }
 
-# Função para desabilitar Cortana
+# FunÃ§Ã£o para desabilitar Cortana
 function disable-Cortana() {    
     Log("Disabling Cortana...")
     if (!(Test-Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings")) {
@@ -419,18 +419,26 @@ function Remove-Edge() {
      
  
 
- # Função para mostrar o submenu com uma lista de programas para baixar
+ # FunÃ§Ã£o para mostrar o submenu com uma lista de programas para baixar
 function programas {
     # Verificar se o Chocolatey já está instalado
     if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
         Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
-        Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        
         if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
             Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e da política de execução."
             return
         }
+	Write-Host "Corrigindo problemas com winget..."
+        choco install winget
+	Write-Host "Corrigido com sucesso!"
         Write-Host "Chocolatey foi instalado com sucesso!"
     }
+}
+
 
     do {
         Clear-Host
@@ -443,7 +451,7 @@ function programas {
         Write-Host "6. OOSO10(ANTISPY)"
         Write-Host "0. Voltar"
 
-        $choice = Read-Host "Digite o número da opção e pressione Enter"
+        $choice = Read-Host "Digite o nÃºmero da opÃ§Ã£o e pressione Enter"
 
         switch ($choice) {
             "1" {
@@ -480,7 +488,7 @@ function programas {
             "6" {
                 $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
 
-# Construir o caminho completo para a pasta de Downloads do usu�rio
+# Construir o caminho completo para a pasta de Downloads do usuário
 $userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
 $downloadPath = Join-Path $userProfile "Downloads"
 $localPath = Join-Path $downloadPath "OOSU10.exe"
@@ -501,7 +509,7 @@ if (Test-Path $localPath) {
 
             "0" { return }
             default {
-                Write-Host "Escolha inválida, tente novamente."
+                Write-Host "Escolha invÃ¡lida, tente novamente."
                 Read-Host "Pressione Enter para continuar..."
             }
         }
@@ -509,25 +517,26 @@ if (Test-Path $localPath) {
 }
 
 
-# Menu de op��es
+# Menu de opções
 do {
     Clear-Host
     Write-Host "Windows Debloater Script" -ForegroundColor Cyan
-    Write-Host "Escolha uma op��o:"
+    Write-Host "Escolha uma opção:"
     Write-Host "1. Desabilitar Telemetria"
-    Write-Host "2. Desabilitar Histórico de Atividades e Rastreamento de Localiza��o"
+    Write-Host "2. Desabilitar Histórico de Atividades e Rastreamento de Localização"
     Write-Host "3. Remover Bloatware"
-    Write-Host "4. Desabilitar Servi�os Especi�ficos"
+    Write-Host "4. Desabilitar Serviços Específicos"
     Write-Host "5. Desabilitar Cortana"
     Write-Host "6. Desabilitar Bing No Menu Iniciar"
-    Write-Host "7. conclusao"
+    Write-Host "7. Conclusão"
     Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
-    Write-Host "9. Hide Search"
-    Write-Host "10.Remover Edge"
-    Write-Host "11.Programas"
+    Write-Host "9. Ocultar Pesquisa"
+    Write-Host "10. Remover Edge"
+    Write-Host "11. Programas"
     Write-Host "0. Sair"
+} while ($true)
     
-    $choice = Read-Host "Digite o n�mero da op��o e pressione Enter"
+    $choice = Read-Host "Digite o número da opção e pressione Enter"
     
     switch ($choice) {
         "1" { Disable-Telemetry }
