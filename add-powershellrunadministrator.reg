@@ -1,6 +1,0 @@
-# essa funcao adiciona a funcao de executar o powershell como administrador ,no contexto de menu padrao.
-[HKEY_CLASSES_ROOT\.suaextensao\shell\runas]
-@="Run as PowerShell with Administrator"
-
-[HKEY_CLASSES_ROOT\.suaextensao\shell\runas\command]
-@="powershell.exe -Command \"Start-Process powershell.exe -ArgumentList ' -NoExit -Command Set-Location -LiteralPath ''%1'' -NoProfile' -Verb RunAs\""
