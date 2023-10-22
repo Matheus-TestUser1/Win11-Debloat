@@ -9,8 +9,9 @@ Para executar o script, copie e cole o seguinte comando no seu terminal PowerShe
 ```powershell
 iex (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Matheus-TestUser1/Win11Debloater/main/win11debloater.ps1").Content
 ```
-Nota: Certifique-se de executar o script como administrador para garantir que ele funcione corretamente.
-Verificação de Segurança
+ # Nota: Certifique-se de executar o script como administrador para garantir que ele funcione corretamente.
+ 
+ # Verificação de Segurança
 
 Este script é seguro de usar. Você pode verificar a segurança do arquivo executável por meio do serviço VirusTotal.
 Recursos
