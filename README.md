@@ -23,5 +23,6 @@ O Win11Debloater oferece os seguintes recursos
     Desativação de tarefas e serviços indesejados.
     Remoção de bloatware e aplicativos pré-instalados.
     
-Observação: Use este script com cuidado, pois a remoção de alguns componentes pode afetar o funcionamento do sistema. É aconselhável criar um ponto de restauração do sistema antes de usar o script.
+ # Observação: Use este script com cuidado, pois a remoção de alguns componentes pode afetar o funcionamento do sistema. É aconselhável criar um ponto de restauração do sistema antes de usar o script.
+
     Sinta-se à vontade para contribuir, relatar problemas ou fazer sugestões para melhorar este script.
