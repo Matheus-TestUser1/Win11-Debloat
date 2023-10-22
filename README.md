@@ -1,13 +1,25 @@
 # Win11Debloater
-Debloater Windows Powershell Script
+**Windows PowerShell Script para Remover Telemetria, Tarefas, Bloatware e Outros**
 
- # Para executar o script, copie e cole o seguinte comando no seu terminal PowerShell:
+Este script do PowerShell é projetado para ajudar a remover telemetria, tarefas, bloatware e outros componentes indesejados do Windows 11.
 
-```powershell"
+## Como Usar
+Para executar o script, copie e cole o seguinte comando no seu terminal PowerShell:
+
+```powershell
 iex (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Matheus-TestUser1/Win11Debloater/main/win11debloater.ps1").Content
 ```
+Nota: Certifique-se de executar o script como administrador para garantir que ele funcione corretamente.
+Verificação de Segurança
 
- # no viruses
-https://www.virustotal.com/gui/file/a8fd40caaa3a1ac950dedd117c2b182536c77c3a01dc4f76739cac82f0bde1d7?nocache=1
+Este script é seguro de usar. Você pode verificar a segurança do arquivo executável por meio do serviço VirusTotal.
+Recursos
 
-# DeBloater Telemetry,Tasks e Bloatwares and outhers.
+O Win11Debloater oferece os seguintes recursos:
+
+    Remoção de telemetria do Windows.
+    Desativação de tarefas e serviços indesejados.
+    Remoção de bloatware e aplicativos pré-instalados.
+    
+
+    Sinta-se à vontade para contribuir, relatar problemas ou fazer sugestões para melhorar este script.
