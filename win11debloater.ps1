@@ -534,10 +534,9 @@ do {
     Write-Host "10. Remover Edge"
     Write-Host "11. Programas"
     Write-Host "0. Sair"
-} while ($true)
-    
+
     $choice = Read-Host "Digite o número da opção e pressione Enter"
-    
+
     switch ($choice) {
         "1" { Disable-Telemetry }
         "2" { Disable-PrivacySettings }
@@ -553,6 +552,6 @@ do {
         "0" { break }
         default { Write-Host "Escolha invalida, tente novamente." }
     }
-    
+
     Read-Host "Pressione Enter para continuar..."
 } while ($choice -ne "0")
