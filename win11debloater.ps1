@@ -473,7 +473,8 @@ function programas {
                 Read-Host "Pressione Enter para continuar..."
             }
             "4" {
-                choco install firefox -y
+                
+		choco install firefox -y
                 Write-Host "Baixando o Firefox..."
                 Write-Host "Programa Firefox baixado e instalado com sucesso!"
                 Read-Host "Pressione Enter para continuar..."
@@ -486,36 +487,23 @@ function programas {
             }
  
             "6" {
-                $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
-
-# Construir o caminho completo para a pasta de Downloads do usuário
-$userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
-$downloadPath = Join-Path $userProfile "Downloads"
-$localPath = Join-Path $downloadPath "OOSU10.exe"
-
-# Baixar o arquivo
-Invoke-WebRequest -Uri $url -OutFile $localPath
-
-# Verificar se o arquivo foi baixado corretamente
-if (Test-Path $localPath) {
-    Write-Host "Arquivo baixado com sucesso em $localPath."
-    
-    # Executar o arquivo
-    Start-Process -FilePath $localPath -Wait
-} else {
-    Write-Host "Falha ao baixar o arquivo."
-}
-                }
-
-            "0" { return }
-            default {
-                Write-Host "Escolha invÃ¡lida, tente novamente."
-                Read-Host "Pressione Enter para continuar..."
+                $userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+            $downloadPath = Join-Path $userProfile "Downloads"
+            $localPath = Join-Path $downloadPath "OOSU10.exe"
+            
+            # Baixar o arquivo
+            Invoke-WebRequest -Uri $url -OutFile $localPath
+            
+            # Verificar se o arquivo foi baixado corretamente
+            if (Test-Path $localPath) {
+                Write-Host "Arquivo baixado com sucesso em $localPath."
+                
+                # Executar o arquivo
+                Start-Process -FilePath $localPath -Wait
+            } else {
+                Write-Host "Falha ao baixar o arquivo."
             }
         }
-    } while ($true)
-}
-
 
 # Menu de opções
 do {
