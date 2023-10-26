@@ -504,6 +504,15 @@ function programas {
                 Write-Host "Falha ao baixar o arquivo."
             }
         }
+ "0" { return }
+        
+        default {
+	Write-Host "Escolha inválida, tente novamente."
+        }
+    }
+    
+    Read-Host "Pressione Enter para continuar..."
+} while ($true)
 
 # Menu de opções
 do {
