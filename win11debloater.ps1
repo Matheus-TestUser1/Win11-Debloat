@@ -419,7 +419,6 @@ function Remove-Edge() {
      
  
 
- # FunÃ§Ã£o para mostrar o submenu com uma lista de programas para baixar
 function programas {
     # Verificar se o Chocolatey já está instalado
     if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
@@ -473,8 +472,7 @@ function programas {
                 Read-Host "Pressione Enter para continuar..."
             }
             "4" {
-                
-		choco install firefox -y
+                choco install firefox -y
                 Write-Host "Baixando o Firefox..."
                 Write-Host "Programa Firefox baixado e instalado com sucesso!"
                 Read-Host "Pressione Enter para continuar..."
@@ -487,32 +485,36 @@ function programas {
             }
  
             "6" {
-                $userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
-            $downloadPath = Join-Path $userProfile "Downloads"
-            $localPath = Join-Path $downloadPath "OOSU10.exe"
-            
-            # Baixar o arquivo
-            Invoke-WebRequest -Uri $url -OutFile $localPath
-            
-            # Verificar se o arquivo foi baixado corretamente
-            if (Test-Path $localPath) {
-                Write-Host "Arquivo baixado com sucesso em $localPath."
-                
-                # Executar o arquivo
-                Start-Process -FilePath $localPath -Wait
-            } else {
-                Write-Host "Falha ao baixar o arquivo."
+                $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
+
+# Construir o caminho completo para a pasta de Downloads do usuário
+$userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+$downloadPath = Join-Path $userProfile "Downloads"
+$localPath = Join-Path $downloadPath "OOSU10.exe"
+
+# Baixar o arquivo
+Invoke-WebRequest -Uri $url -OutFile $localPath
+
+# Verificar se o arquivo foi baixado corretamente
+if (Test-Path $localPath) {
+    Write-Host "Arquivo baixado com sucesso em $localPath."
+    
+    # Executar o arquivo
+    Start-Process -FilePath $localPath -Wait
+} else {
+    Write-Host "Falha ao baixar o arquivo."
+}
+                }
+
+            "0" { return }
+            default {
+                Write-Host "Escolha invÃ¡lida, tente novamente."
+                Read-Host "Pressione Enter para continuar..."
             }
         }
- "0" { return }
-        
-        default {
-	Write-Host "Escolha inválida, tente novamente."
-        }
-    }
-    
-    Read-Host "Pressione Enter para continuar..."
-} while ($true)
+    } while ($true)
+}
+
 
 # Menu de opções
 do {
@@ -531,9 +533,10 @@ do {
     Write-Host "10. Remover Edge"
     Write-Host "11. Programas"
     Write-Host "0. Sair"
-
+} while ($true)
+    
     $choice = Read-Host "Digite o número da opção e pressione Enter"
-
+    
     switch ($choice) {
         "1" { Disable-Telemetry }
         "2" { Disable-PrivacySettings }
@@ -549,6 +552,6 @@ do {
         "0" { break }
         default { Write-Host "Escolha invalida, tente novamente." }
     }
-
+    
     Read-Host "Pressione Enter para continuar..."
 } while ($choice -ne "0")
