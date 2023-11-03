@@ -1,3 +1,4 @@
+
 If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
     [Void] [System.Windows.Forms.MessageBox]::Show(
         "Você não está executando este script como administrador! Você deve usar este script como administrador!", 
@@ -265,13 +266,13 @@ function DisableBingSearchInStartMenu() {
 }
 
 # FunÃ§Ã£o para esconder a barra de pesquisa da barra de tarefas
-function hidesearch() {
+function HideSearch() {
     Log("Hiding Taskbar Search icon / box...")
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 0
 }
 
 # FunÃ§Ã£o para desabilitar Cortana
-function disable-Cortana() {    
+function Disable-Cortana() {    
     Log("Disabling Cortana...")
     if (!(Test-Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings" -Force | Out-Null
@@ -418,15 +419,27 @@ function Remove-Edge() {
 }
      
  
+<<<<<<< HEAD
+function programas() {
+ # Função para mostrar o submenu com uma lista de programas para baixar
+# Verificar se o Chocolatey já está instalado
+=======
 
 function programas {
     # Verificar se o Chocolatey já está instalado
+>>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
     if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
         Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
+<<<<<<< HEAD
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+=======
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
         
+>>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
         if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
             Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e da política de execução."
             return
@@ -442,9 +455,9 @@ function programas {
     do {
         Clear-Host
         Write-Host "Escolha um programa para baixar:"
-        Write-Host "1. 7zip"
+        Write-Host "1. 7-Zip"
         Write-Host "2. Google Chrome"
-        Write-Host "3. WinRar"
+        Write-Host "3. WinRAR"
         Write-Host "4. Firefox"
         Write-Host "5. SimpleWall"
         Write-Host "6. OOSO10(ANTISPY)"
@@ -454,34 +467,19 @@ function programas {
 
         switch ($choice) {
             "1" {
-                choco install 7zip -y
-                Write-Host "Baixando 7zip..."
-                Write-Host "Programa 7Zip baixado e instalado com sucesso!"
-                Read-Host "Pressione Enter para continuar..."
+                Install-ChocolateyPackage '7zip' '7-Zip'
             }
             "2" {
-                choco install googlechrome -y
-                Write-Host "Baixando o Google Chrome..."
-                Write-Host "Programa Google Chrome baixado e instalado com sucesso!"
-                Read-Host "Pressione Enter para continuar..."
+                Install-ChocolateyPackage 'googlechrome' 'Google Chrome'
             }
             "3" {
-                choco install winrar -y
-                Write-Host "Baixando o WinRar..."
-                Write-Host "Programa WinRar baixado e instalado com sucesso!"
-                Read-Host "Pressione Enter para continuar..."
+                Install-ChocolateyPackage 'winrar' 'WinRAR'
             }
             "4" {
-                choco install firefox -y
-                Write-Host "Baixando o Firefox..."
-                Write-Host "Programa Firefox baixado e instalado com sucesso!"
-                Read-Host "Pressione Enter para continuar..."
+                Install-ChocolateyPackage 'firefox' 'Firefox'
             }
             "5" {
-                choco install SimpleWall -y
-                Write-Host "Baixando o simplewall..."
-                Write-Host "Programa simplewall baixado e instalado com sucesso!"
-                Read-Host "Pressione Enter para continuar..."
+                Install-ChocolateyPackage 'simplewall' 'SimpleWall'
             }
  
             "6" {
@@ -515,10 +513,14 @@ if (Test-Path $localPath) {
     } while ($true)
 }
 
+function programas($packageName, $displayName) {
+    choco install $packageName -y
+    Write-Host "Baixando $displayName..."
+    Write-Host "Programa $displayName baixado e instalado com sucesso!"
+    Read-Host "Pressione Enter para continuar..."
+}
 
-# Menu de opções
-do {
-    Clear-Host
+ Clear-Host
     Write-Host "Windows Debloater Script" -ForegroundColor Cyan
     Write-Host "Escolha uma opção:"
     Write-Host "1. Desabilitar Telemetria"
@@ -529,12 +531,26 @@ do {
     Write-Host "6. Desabilitar Bing No Menu Iniciar"
     Write-Host "7. Conclusão"
     Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
+<<<<<<< HEAD
+    Write-Host "9. Hide Search"
+    Write-Host "10. Remover Edge"
+    Write-Host "11. Programas"
+=======
     Write-Host "9. Ocultar Pesquisa"
     Write-Host "10. Remover Edge"
     Write-Host "11. Programas"
+>>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
     Write-Host "0. Sair"
+<<<<<<< HEAD
+}
+
+# Loop do menu
+do {
+    Show-Menu
+=======
 } while ($true)
     
+>>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
     $choice = Read-Host "Digite o número da opção e pressione Enter"
     
     switch ($choice) {
@@ -542,11 +558,11 @@ do {
         "2" { Disable-PrivacySettings }
         "3" { Remove-Bloatware }
         "4" { Disable-Services }
-        "5" { disable-Cortana }
+        "5" { Disable-Cortana }
         "6" { DisableBingSearchInStartMenu }
         "7" { Apply-WindowsTweaks }
         "8" { DisableBackgroundAppAccess }
-        "9" { hidesearch }
+        "9" { HideSearch }
         "10" { Remove-Edge }
         "11" { programas }
         "0" { break }
@@ -555,3 +571,4 @@ do {
     
     Read-Host "Pressione Enter para continuar..."
 } while ($choice -ne "0")
+
