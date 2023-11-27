@@ -417,29 +417,25 @@ function Remove-Edge() {
     Get-AppxProvisionedPackage -Online | where DisplayName -eq "Microsoft.MicrosoftEdge" | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
     Log("Microsoft Edge has been removed!")
 }
-     
- 
-<<<<<<< HEAD
-function programas() {
  # Função para mostrar o submenu com uma lista de programas para baixar
 # Verificar se o Chocolatey já está instalado
-=======
+
 
 function programas {
     # Verificar se o Chocolatey já está instalado
->>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
+
     if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
         Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
-<<<<<<< HEAD
+
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-=======
+
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
         
->>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
+
         if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
             Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e da política de execução."
             return
@@ -520,7 +516,10 @@ function programas($packageName, $displayName) {
     Read-Host "Pressione Enter para continuar..."
 }
 
- Clear-Host
+
+# Menu de opções
+do {
+    Clear-Host
     Write-Host "Windows Debloater Script" -ForegroundColor Cyan
     Write-Host "Escolha uma opção:"
     Write-Host "1. Desabilitar Telemetria"
@@ -531,26 +530,12 @@ function programas($packageName, $displayName) {
     Write-Host "6. Desabilitar Bing No Menu Iniciar"
     Write-Host "7. Conclusão"
     Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
-<<<<<<< HEAD
-    Write-Host "9. Hide Search"
-    Write-Host "10. Remover Edge"
-    Write-Host "11. Programas"
-=======
     Write-Host "9. Ocultar Pesquisa"
     Write-Host "10. Remover Edge"
     Write-Host "11. Programas"
->>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
     Write-Host "0. Sair"
-<<<<<<< HEAD
-}
-
-# Loop do menu
-do {
-    Show-Menu
-=======
 } while ($true)
     
->>>>>>> e320f4707e934570f7ea3324ffccb7ed2b14fae3
     $choice = Read-Host "Digite o número da opção e pressione Enter"
     
     switch ($choice) {
@@ -558,11 +543,11 @@ do {
         "2" { Disable-PrivacySettings }
         "3" { Remove-Bloatware }
         "4" { Disable-Services }
-        "5" { Disable-Cortana }
+        "5" { disable-Cortana }
         "6" { DisableBingSearchInStartMenu }
         "7" { Apply-WindowsTweaks }
         "8" { DisableBackgroundAppAccess }
-        "9" { HideSearch }
+        "9" { hidesearch }
         "10" { Remove-Edge }
         "11" { programas }
         "0" { break }
@@ -571,4 +556,3 @@ do {
     
     Read-Host "Pressione Enter para continuar..."
 } while ($choice -ne "0")
-
