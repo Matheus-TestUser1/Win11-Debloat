@@ -11,7 +11,7 @@ If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 
 $description = "Ponto de restauração criado por script PowerShell"
 $restorePoint = Get-ComputerRestorePoint
-if ($restorePoint -eq $null)  {
+if ($null -eq $restorePoint)  {
     Write-Host "Criando um ponto de restauração para sua segurança..."
     Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
 } else {
@@ -266,7 +266,7 @@ function DisableBingSearchInStartMenu() {
 }
 
 # FunÃ§Ã£o para esconder a barra de pesquisa da barra de tarefas
-function HideSearch() {
+function Hide-Search() {
     Log("Hiding Taskbar Search icon / box...")
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 0
 }
@@ -296,7 +296,7 @@ function Disable-Cortana() {
     Log("Disabled Cortana")
 }
 
-function Apply-WindowsTweaks() {
+function Update-Tweaks() {
     $scheduledTasksToDisable = @(
         "\Microsoft\Windows\ApplicationData\CleanupTemporaryState",
         "\Microsoft\Windows\ApplicationData\DsSvcCleanup",
@@ -414,7 +414,7 @@ function Apply-WindowsTweaks() {
 function Remove-Edge() {
         Log("Removing Microsoft Edge...")
     Get-AppxPackage -AllUsers *Microsoft.MicrosoftEdge* | Remove-AppxPackage -ErrorAction SilentlyContinue
-    Get-AppxProvisionedPackage -Online | where DisplayName -eq "Microsoft.MicrosoftEdge" | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+    Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
     Log("Microsoft Edge has been removed!")
 }
  # Função para mostrar o submenu com uma lista de programas para baixar
@@ -429,17 +429,18 @@ function programas {
 
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
         
 
         if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
             Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e da política de execução."
             return
         }
+
 	Write-Host "Corrigindo problemas com winget..."
         choco install winget
 	Write-Host "Corrigido com sucesso!"
@@ -459,7 +460,7 @@ function programas {
         Write-Host "6. OOSO10(ANTISPY)"
         Write-Host "0. Voltar"
 
-        $choice = Read-Host "Digite o nÃºmero da opÃ§Ã£o e pressione Enter"
+        $choice = Read-Host "Digite o número da opção e pressione Enter"
 
         switch ($choice) {
             "1" {
@@ -507,7 +508,7 @@ if (Test-Path $localPath) {
             }
         }
     } while ($true)
-}
+
 
 function programas($packageName, $displayName) {
     choco install $packageName -y
@@ -545,14 +546,15 @@ do {
         "4" { Disable-Services }
         "5" { disable-Cortana }
         "6" { DisableBingSearchInStartMenu }
-        "7" { Apply-WindowsTweaks }
+        "7" { Update-Tweaks }
         "8" { DisableBackgroundAppAccess }
-        "9" { hidesearch }
+        "9" { Hide-Search }
         "10" { Remove-Edge }
         "11" { programas }
         "0" { break }
         default { Write-Host "Escolha invalida, tente novamente." }
     }
     
-    Read-Host "Pressione Enter para continuar..."
-} while ($choice -ne "0")
+    Read-Host "Pressione Enter para continuar..." 
+
+ while ($choice -ne "0") {}
