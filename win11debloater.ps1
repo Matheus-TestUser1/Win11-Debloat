@@ -1,4 +1,4 @@
-
+# script para windows 11 e 10!
 If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
     [Void] [System.Windows.Forms.MessageBox]::Show(
         "Você não está executando este script como administrador! Você deve usar este script como administrador!", 
@@ -421,9 +421,8 @@ function Remove-Edge() {
 # Verificar se o Chocolatey já está instalado
 
 
-function programas {
+function install-programs() {
     # Verificar se o Chocolatey já está instalado
-
     if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
         Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
 
@@ -431,23 +430,12 @@ function programas {
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-        
-
         if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
             Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e da política de execução."
             return
         }
-
-	Write-Host "Corrigindo problemas com winget..."
-        choco install winget
-	Write-Host "Corrigido com sucesso!"
         Write-Host "Chocolatey foi instalado com sucesso!"
     }
-}
-
 
     do {
         Clear-Host
@@ -464,64 +452,59 @@ function programas {
 
         switch ($choice) {
             "1" {
-                Install-ChocolateyPackage '7zip' '7-Zip'
+                choco install 7zip
             }
             "2" {
-                Install-ChocolateyPackage 'googlechrome' 'Google Chrome'
+                choco install googlechrome
             }
             "3" {
-                Install-ChocolateyPackage 'winrar' 'WinRAR'
+                choco install winrar
             }
             "4" {
-                Install-ChocolateyPackage 'firefox' 'Firefox'
+                choco install firefox
             }
             "5" {
-                Install-ChocolateyPackage 'simplewall' 'SimpleWall'
+                choco install simplewall
             }
- 
             "6" {
                 $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
 
-# Construir o caminho completo para a pasta de Downloads do usuário
-$userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
-$downloadPath = Join-Path $userProfile "Downloads"
-$localPath = Join-Path $downloadPath "OOSU10.exe"
+                # Construir o caminho completo para a pasta de Downloads do usuário
+                $userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+                $downloadPath = Join-Path $userProfile "Downloads"
+                $localPath = Join-Path $downloadPath "OOSU10.exe"
 
-# Baixar o arquivo
-Invoke-WebRequest -Uri $url -OutFile $localPath
+                # Baixar o arquivo
+                try {
+                    Invoke-WebRequest -Uri $url -OutFile $localPath -ErrorAction Stop
 
-# Verificar se o arquivo foi baixado corretamente
-if (Test-Path $localPath) {
-    Write-Host "Arquivo baixado com sucesso em $localPath."
-    
-    # Executar o arquivo
-    Start-Process -FilePath $localPath -Wait
-} else {
-    Write-Host "Falha ao baixar o arquivo."
-}
+                    # Verificar se o arquivo foi baixado corretamente
+                    if (Test-Path $localPath) {
+                        Write-Host "Arquivo baixado com sucesso em $localPath."
+                        
+                        # Executar o arquivo
+                        Start-Process -FilePath $localPath -Wait
+                    } else {
+                        Write-Host "Falha ao baixar o arquivo."
+                    }
+                } catch {
+                    Write-Host "Erro ao baixar ou executar o arquivo: $_"
                 }
-
+            }
             "0" { return }
             default {
-                Write-Host "Escolha invÃ¡lida, tente novamente."
+                Write-Host "Escolha inválida, tente novamente."
                 Read-Host "Pressione Enter para continuar..."
             }
         }
     } while ($true)
-
-
-function programas($packageName, $displayName) {
-    choco install $packageName -y
-    Write-Host "Baixando $displayName..."
-    Write-Host "Programa $displayName baixado e instalado com sucesso!"
-    Read-Host "Pressione Enter para continuar..."
 }
 
 
 # Menu de opções
 do {
     Clear-Host
-    Write-Host "Windows Debloater Script" -ForegroundColor Cyan
+    Write-Host "Windows Debloater Script WIN11/10" -ForegroundColor Cyan
     Write-Host "Escolha uma opção:"
     Write-Host "1. Desabilitar Telemetria"
     Write-Host "2. Desabilitar Histórico de Atividades e Rastreamento de Localização"
@@ -535,10 +518,9 @@ do {
     Write-Host "10. Remover Edge"
     Write-Host "11. Programas"
     Write-Host "0. Sair"
-} while ($true)
-    
+
     $choice = Read-Host "Digite o número da opção e pressione Enter"
-    
+
     switch ($choice) {
         "1" { Disable-Telemetry }
         "2" { Disable-PrivacySettings }
@@ -550,11 +532,11 @@ do {
         "8" { DisableBackgroundAppAccess }
         "9" { Hide-Search }
         "10" { Remove-Edge }
-        "11" { programas }
+        "11" { install-programs }   
         "0" { break }
         default { Write-Host "Escolha invalida, tente novamente." }
     }
-    
-    Read-Host "Pressione Enter para continuar..." 
 
- while ($choice -ne "0") {}
+    Read-Host "Pressione Enter para continuar..."
+
+} while ($choice -ne "0")
