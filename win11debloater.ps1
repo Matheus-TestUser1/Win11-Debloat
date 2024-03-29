@@ -539,4 +539,4 @@ do {
 
     Read-Host "Pressione Enter para continuar..."
 
-} while ($choice -ne "0")
+} while ($choice -ne "0") {}
