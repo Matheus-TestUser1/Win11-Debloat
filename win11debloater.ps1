@@ -452,19 +452,19 @@ function install-programs() {
 
         switch ($choice) {
             "1" {
-                choco install 7zip
+                choco install 7zip -y
             }
             "2" {
-                choco install googlechrome
+                choco install googlechrome -y
             }
             "3" {
-                choco install winrar
+                choco install winrar -y
             }
             "4" {
-                choco install firefox
+                choco install firefox -y
             }
             "5" {
-                choco install simplewall
+                choco install simplewall -y
             }
             "6" {
                 $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
