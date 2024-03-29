@@ -446,18 +446,17 @@ function Remove-Edge() {
  # Função para mostrar o submenu com uma lista de programas para baixar
 # Verificar se o Chocolatey já está instalado
 
-
 function install-programs() {
     # Verificar se o Chocolatey já está instalado
-    if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
+    if (-not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
         Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
 
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
-        if (-Not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
-            Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e da política de execução."
+        if (-not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
+            Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e a política de execução."
             return
         }
         Write-Host "Chocolatey foi instalado com sucesso!"
@@ -471,8 +470,8 @@ function install-programs() {
         Write-Host "3. WinRAR"
         Write-Host "4. Firefox"
         Write-Host "5. SimpleWall"
-        Write-Host "6. OOSO10(ANTISPY)"
-        Write-Host "0. Voltar"
+        Write-Host "6. OOSO10 (ANTISPY)"
+        Write-Host "0. Sair"
 
         $choice = Read-Host "Digite o número da opção e pressione Enter"
 
@@ -525,6 +524,7 @@ function install-programs() {
         }
     } while ($true)
 }
+
 
 
 # Menu de opções
