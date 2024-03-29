@@ -14,7 +14,8 @@ iwr -useb https://bit.ly/3VyJ1Z7 | iex
 Verificação de Segurança
 
 Este script é seguro de usar. Você pode verificar a segurança do arquivo executável por meio do serviço VirusTotal.
-Recursos
+
+# Recursos
 
 Win11Debloater oferece os seguintes recursos:
 
