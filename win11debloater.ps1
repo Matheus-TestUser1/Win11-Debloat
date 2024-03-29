@@ -438,11 +438,63 @@ function Update-Tweaks() {
 
 
 function Remove-Edge() {
-        Log("Removing Microsoft Edge...")
-    Get-AppxPackage -AllUsers *Microsoft.MicrosoftEdge* | Remove-AppxPackage -ErrorAction SilentlyContinue
-    Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
-    Log("Microsoft Edge has been removed!")
+    Write-Output "Removing Microsoft Edge..."
+    $errorOccurred = $false
+
+    # Desabilita o serviço de atualização automática do Microsoft Edge, se presente
+    $edgeUpdateService = Get-Service -Name "edgeupdate" -ErrorAction SilentlyContinue
+    if ($null -ne $edgeUpdateService) {
+        try {
+            Set-Service -Name "edgeupdate" -StartupType Disabled -ErrorAction Stop
+            Write-Output "Disabled Microsoft Edge update service."
+        } catch {
+            Write-Error "Failed to disable Microsoft Edge update service: ${_}"
+            $errorOccurred = $true
+        }
+    } else {
+        Write-Output "Microsoft Edge update service not found."
+    }
+
+    $job = Start-Job -ScriptBlock {
+        param ($errorOccurred)
+        $edgePackage = Get-AppxPackage -AllUsers *Microsoft.MicrosoftEdge* -ErrorAction SilentlyContinue
+        if ($edgePackage) {
+            $edgePackage | Remove-AppxPackage -ErrorAction SilentlyContinue
+            if ($?) {
+                Write-Output "Microsoft Edge has been removed!"
+            } else {
+                $errorOccurred = $true
+            }
+        } else {
+            Write-Output "Microsoft Edge not found."
+        }
+
+        $edgeProvisionedPackage = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" -ErrorAction SilentlyContinue
+        if ($edgeProvisionedPackage) {
+            $edgeProvisionedPackage | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+            if (-not $?) {
+                $errorOccurred = $true
+            }
+        }
+    } -ArgumentList $errorOccurred
+
+    # Espera até que o trabalho termine
+    Wait-Job $job
+
+    # Exibe mensagem de erro, se houver
+    if ($errorOccurred) {
+        Write-Error "Failed to remove Microsoft Edge."
+    } else {
+        # Obtém o resultado do trabalho
+        $result = Receive-Job $job
+    }
+
+    # Limpa o trabalho
+    Remove-Job $job
 }
+
+
+
  # Função para mostrar o submenu com uma lista de programas para baixar
 # Verificar se o Chocolatey já está instalado
 
@@ -471,7 +523,7 @@ function install-programs() {
         Write-Host "4. Firefox"
         Write-Host "5. SimpleWall"
         Write-Host "6. OOSO10 (ANTISPY)"
-        Write-Host "0. Sair"
+        Write-Host "0. Voltar"
 
         $choice = Read-Host "Digite o número da opção e pressione Enter"
 
