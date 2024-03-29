@@ -47,25 +47,42 @@ function Error($message) {
 # FunÃ§Ã£o para desabilitar telemetria
 function Disable-Telemetry() {
     Log("Disabling Telemetry...")
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" -Name "AllowTelemetry" -Type DWord -Value 0
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Name "AllowTelemetry" -Type DWord -Value 0
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection" -Name "AllowTelemetry" -Type DWord -Value 0
-    Disable-ScheduledTask -TaskName "Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser" | Out-Null
-    Disable-ScheduledTask -TaskName "Microsoft\Windows\Application Experience\ProgramDataUpdater" | Out-Null
-    Disable-ScheduledTask -TaskName "Microsoft\Windows\Autochk\Proxy" | Out-Null
-    Disable-ScheduledTask -TaskName "Microsoft\Windows\Customer Experience Improvement Program\Consolidator" | Out-Null
-    Disable-ScheduledTask -TaskName "Microsoft\Windows\Customer Experience Improvement Program\UsbCeip" | Out-Null
-    Disable-ScheduledTask -TaskName "Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector" | Out-Null
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v AITEnable /t REG_DWORD /d 0 /f
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v DisableUAR /t REG_DWORD /d 1 /f
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v DisableInventory /t REG_DWORD /d 1 /f
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v DisablePCA /t REG_DWORD /d 1 /f
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v DisableMonitoring /t REG_DWORD /d 1 /f
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v DisableProblemReports /t REG_DWORD /d 1 /f
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\EdgeWebView" /v AllowTelemetry /t REG_DWORD /d 0 /f
+
+    # Define as chaves e valores do registro que você deseja modificar
+    $registrySettings = @{
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection\AllowTelemetry" = 0
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection\AllowTelemetry" = 0
+        "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection\AllowTelemetry" = 0
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat\AITEnable" = 0
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat\DisableUAR" = 1
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat\DisableInventory" = 1
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat\DisablePCA" = 1
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat\DisableMonitoring" = 1
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat\DisableProblemReports" = 1
+        "HKLM:\SOFTWARE\Policies\Microsoft\EdgeWebView\AllowTelemetry" = 0
+    }
+
+    # Define um loop para percorrer as configurações e aplicá-las
+    foreach ($setting in $registrySettings.GetEnumerator()) {
+        $key = $setting.Key
+        $value = $setting.Value
+        # Verifica se a chave do registro existe, se não, cria-a
+        if (-not (Test-Path $key)) {
+            New-Item -Path $key -Force | Out-Null
+        }
+        # Tenta modificar o registro
+        try {
+            # Define o valor do registro
+            Set-ItemProperty -Path $key -Name "(Default)" -Value $value -Type DWORD -Force
+            Write-Host "Configuração atualizada com sucesso: $key"
+        } catch {
+            Write-Host "Ocorreu um erro ao tentar modificar o registro: $_" -ForegroundColor Red
+        }
+    }
+
     Log("Telemetry has been disabled!")
 }
+
 
 # FunÃ§Ã£o para desabilitar histÃ³rico de atividades e rastreamento de localizaÃ§Ã£o
 function Disable-PrivacySettings() {
