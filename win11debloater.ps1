@@ -135,80 +135,81 @@ function Disable-PrivacySettings() {
 # FunÃ§Ã£o para desabilitar serviÃ§os especÃ­ficos
 function Disable-Services() {
     Log("Disabling specified services...")
-    $Services = @(
-	"*xbox*" # Xbox Services
-        "*Xbl*" # Xbox Services
-        "XboxNetApiSvc" # Xbox Services
-        #"LanmanWorkstation" # Causes problems with Mapped Drives and File Sharing Programs!
-        #"workfolderssvc" # Causes problems with Mapped Drives and File Sharing Programs!
-        "WSearch" # Windows Search
-        #"PushToInstall" # Needed for Microsoft Store
-        #"icssvc" # Mobile Hotspot
-        "MixedRealityOpenXRSvc" # Mixed Reality
-        "WMPNetworkSvc" # Windows Media Player Sharing
-        #"LicenseManager" # License Manager for Microsoft Store
-        #"wisvc" # Insider Program
-        "WerSvc" # Error Reporting
-        #"WalletService" # Wallet Service
-        #"lmhosts" # TCP/IP NetBIOS Helper
-        "SysMain" # SuperFetch - Safe to disable if you have a SSD
-        #"svsvc" # Spot Verifier
-        #"sppsvc" # Software Protection
-        "SCPolicySvc" # Smart Card Removal Policy
-        "ScDeviceEnum" # Smart Card Device Enumeration Service
-        "SCardSvr" # Smart Card
-        "LanmanServer" # Server # Causes problems with Mapped Drives and File Sharing Programs!
-        #"SensorService" # Sensor Service
-        "RetailDemo" # Retail Demo Service
-        "RemoteRegistry" # Remote Registry # Issue by V1ce
-        #"UmRdpService" # Remote Desktop Services UserMode Port Redirector # Issue by V1ce
-        #"TermService" # Remote Desktop Services # Issue by V1ce
-        #"SessionEnv" # Remote Desktop Configuration # Issue by V1ce
-        #"RasMan" # Remote Access Connection Manager # Issue by V1ce
-        #"RasAuto" # Remote Access Auto Connection Manager # Issue by V1ce
-        #"TroubleshootingSvc" # Recommended Troubleshooting Service
-        #"RmSvc" # Radio Management Service (Might be needed for laptops)
-        #"QWAVE" # Quality Windows Audio Video Experience
-        #"wercplsupport" # Problem Reports Control Panel Support
-        #"Spooler" # Print Spooler # Issue by V1ce
-        #"PrintNotify" # Printer Extensions and Notifications # Issue by V1ce
-        #"PhoneSvc" # Phone Service
-        #"SEMgrSvc" # Payments and NFC/SE Manager
-        "WpcMonSvc" # Parental Controls
-        #"CscService" # Offline Files
-        #"InstallService" # Microsoft Store Install Service
-        #"SmsRouter" # Microsoft Windows SMS Router Service
-        #"smphost" # Microsoft Storage Spaces SMP
-        #"NgcCtnrSvc" # Microsoft Passport Container
-        #"MsKeyboardFilter" # Microsoft Keyboard Filter ... thanks (.AtomRadar treasury #8267) for report. 
-        #"cloudidsvc" # Microsoft Cloud Identity Service
-        #"wlidsvc" # Microsoft Account Sign-in Assistant
-        "*diagnosticshub*" # Microsoft (R) Diagnostics Hub Standard Collector Service
-        #"iphlpsvc" # IP Helper - Might break some VPN Clients
-        #"lfsvc" # Geolocation Service # Issue by V1ce
-        #"fhsvc" # File History Service # Issue by V1ce
-        #"Fax" # Fax # Issue by V1ce
-        #"embeddedmode" # Embedded Mode
-        "MapsBroker" # Downloaded Maps Manager
-        "TrkWks" # Distributed Link Tracking Client
-        "WdiSystemHost" # Diagnostic System Host
-        "WdiServiceHost" # Diagnostic Service Host
-        "DPS" # Diagnostic Policy Service
-        "diagsvc" # Diagnostic Execution Service
-        #"DusmSvc" # Data Usage
-        #"VaultSvc" # Credential Manager
-        #"AppReadiness" # App Readiness
-    )
-	
-        # Adicione os serviÃ§os que vocÃª deseja desabilitar aqui
     
+    # Lista de serviços a serem desabilitados
+    $Services = @(
+        "*xbox*",              # Serviços do Xbox
+        "*Xbl*",               # Serviços do Xbox
+        "XboxNetApiSvc",       # Serviços do Xbox
+        #"LanmanWorkstation",  # Causa problemas com unidades mapeadas e programas de compartilhamento de arquivos!
+        #"workfolderssvc",     # Causa problemas com unidades mapeadas e programas de compartilhamento de arquivos!
+        "WSearch",             # Pesquisa do Windows
+        #"PushToInstall",      # Necessário para a Microsoft Store
+        #"icssvc",             # Ponto de Acesso Móvel
+        "MixedRealityOpenXRSvc", # Realidade Mista
+        "WMPNetworkSvc",       # Compartilhamento do Windows Media Player
+        #"LicenseManager",     # Gerenciador de Licenças para Microsoft Store
+        #"wisvc",              # Programa Insider
+        "WerSvc",              # Relatórios de erros
+        #"WalletService",      # Serviço de Carteira
+        #"lmhosts",            # Auxiliar TCP/IP NetBIOS
+        "SysMain",             # SuperFetch - Seguro para desativar se você tiver um SSD
+        #"svsvc",              # Verificador de Ponto
+        #"sppsvc",             # Proteção de Software
+        "SCPolicySvc",         # Política de Remoção de Cartão Inteligente
+        "ScDeviceEnum",        # Enumeração de Dispositivos de Cartão Inteligente
+        "SCardSvr",            # Cartão Inteligente
+        #"LanmanServer",       # Servidor - Causa problemas com unidades mapeadas e programas de compartilhamento de arquivos!
+        #"SensorService",      # Serviço de Sensores
+        "RetailDemo",          # Serviço de Demonstração no Varejo
+        "RemoteRegistry",      # Registro Remoto - Emitido por V1ce
+        #"UmRdpService",       # Serviços de Desktop Remoto do Modo de Usuário - Emitido por V1ce
+        #"TermService",        # Serviços de Desktop Remoto - Emitido por V1ce
+        #"SessionEnv",         # Configuração de Desktop Remoto - Emitido por V1ce
+        #"RasMan",             # Gerenciador de Conexão de Acesso Remoto - Emitido por V1ce
+        #"RasAuto",            # Gerenciador de Conexão Automática de Acesso Remoto - Emitido por V1ce
+        #"TroubleshootingSvc", # Serviço de Solução de Problemas Recomendado
+        #"RmSvc",              # Serviço de Gerenciamento de Rádio (Pode ser necessário para laptops)
+        #"QWAVE",              # Experiência de Áudio e Vídeo do Windows de Qualidade
+        #"wercplsupport",      # Suporte ao Painel de Controle de Relatórios de Problemas
+        #"Spooler",            # Spooler de Impressão - Emitido por V1ce
+        #"PrintNotify",        # Extensões e Notificações de Impressora - Emitido por V1ce
+        #"PhoneSvc",           # Serviço de Telefone
+        #"SEMgrSvc",           # Gerenciador de Pagamentos e NFC/SE
+        "WpcMonSvc",           # Controles Parentais
+        #"CscService",         # Arquivos Offline
+        #"InstallService",     # Serviço de Instalação da Microsoft Store
+        #"SmsRouter",          # Roteador de SMS do Windows Microsoft
+        #"smphost",            # Serviço SMP de Espaços de Armazenamento Microsoft
+        #"NgcCtnrSvc",         # Contêiner de Passaporte Microsoft
+        #"MsKeyboardFilter",   # Filtro de Teclado Microsoft ... obrigado (.AtomRadar treasury #8267) pelo relatório. 
+        #"cloudidsvc",         # Serviço de Identidade na Nuvem da Microsoft
+        #"wlidsvc",            # Assistente de Logon da Conta Microsoft
+        "*diagnosticshub*",   # Coletor Padrão de Serviços de Diagnóstico do Microsoft (R)
+        #"iphlpsvc",           # Assistente de IP - Pode quebrar alguns Clientes VPN
+        #"lfsvc",              # Serviço de Geolocalização - Emitido por V1ce
+        #"fhsvc",              # Serviço de Histórico de Arquivos - Emitido por V1ce
+        #"Fax",                # Fax - Emitido por V1ce
+        #"embeddedmode",       # Modo Incorporado
+        "MapsBroker",          # Gerenciador de Mapas Baixados
+        "TrkWks",              # Cliente de Rastreamento de Link Distribuído
+        "WdiSystemHost",       # Host do Sistema de Diagnóstico
+        "WdiServiceHost",      # Host do Serviço de Diagnóstico
+        "DPS",                 # Serviço de Política de Diagnóstico
+        "diagsvc"              # Serviço de Execução de Diagnóstico
+        #"DusmSvc",            # Uso de Dados
+        #"VaultSvc",           # Gerenciador de Credenciais
+        #"AppReadiness",       # Preparo do Aplicativo
+    )
 
-    # Desabilitar os serviÃ§os listados
+    # Desabilitar os serviços listados
     foreach ($Service in $Services) {
-        Get-Service -Name $Service -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled
-        if ($Service.Status -match "Running") {
-            Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
-            Log("Trying to disable $($Service.DisplayName)")
+        if (-not $Service.StartsWith("#")) {
+            Get-Service -Name $Service -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled
+            if ((Get-Service -Name $Service).Status -eq "Running") {
+                Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
+                Log("Trying to disable $($Service.DisplayName)")
+            }
         }
     }
     
@@ -220,46 +221,46 @@ function Remove-Bloatware() {
     Log("Removendo bloatware, aguarde...")
 
     $BloatwareList = @(
-        "Microsoft.BingNews"
-        "Microsoft.BingWeather"
-        "Microsoft.GetHelp"
-        "Microsoft.Getstarted"
-        "Microsoft.MicrosoftOfficeHub"
-        "Microsoft.MicrosoftSolitaireCollection"
-        #"Microsoft.MicrosoftStickyNotes" # Problema relatado por V1ce | Pode causar problemas com o sysprep
-        "Microsoft.PowerAutomateDesktop" # Obrigado V1ce
-        "Microsoft.SecHealthUI" # Obrigado V1ce
-        "Microsoft.People"
-        "Microsoft.Todos"
-        #"Microsoft.Windows.Photos"
-        "Microsoft.WindowsAlarms"
-        #"Microsoft.WindowsCamera"
-        "microsoft.windowscommunicationsapps"
-        "Microsoft.WindowsFeedbackHub"
-        "Microsoft.WindowsMaps"
-        "Microsoft.WindowsSoundRecorder"
-        #"Microsoft.YourPhone" # Realmente Ãºtil
-        "Microsoft.ZuneMusic"
-        "Microsoft.ZuneVideo"
-        "MicrosoftTeams"
+        "Microsoft.BingNews",
+        "Microsoft.BingWeather",
+        "Microsoft.GetHelp",
+        "Microsoft.Getstarted",
+        "Microsoft.MicrosoftOfficeHub",
+        "Microsoft.MicrosoftSolitaireCollection",
+        #"Microsoft.MicrosoftStickyNotes", # Problema relatado por V1ce | Pode causar problemas com o sysprep
+        "Microsoft.PowerAutomateDesktop", # Obrigado V1ce
+        "Microsoft.SecHealthUI", # Obrigado V1ce
+        "Microsoft.People",
+        "Microsoft.Todos",
+        #"Microsoft.Windows.Photos",
+        "Microsoft.WindowsAlarms",
+        #"Microsoft.WindowsCamera",
+        "microsoft.windowscommunicationsapps",
+        "Microsoft.WindowsFeedbackHub",
+        "Microsoft.WindowsMaps",
+        "Microsoft.WindowsSoundRecorder",
+        #"Microsoft.YourPhone", # Realmente útil
+        "Microsoft.ZuneMusic",
+        "Microsoft.ZuneVideo",
+        "MicrosoftTeams",
         "ClipChamp.ClipChamp"
-        # Adicione mais aplicativos de bloatware Ã  lista, se necessÃ¡rio
+        # Adicione mais aplicativos de bloatware à lista, se necessário
     )
-    foreach ($Bloat in $BloatwareList) {
-        if ((Get-AppxPackage -Name $Bloat).NonRemovable -eq $false) {
-            Log("Tentando remover $Bloat")
-            try {
-                Get-AppxPackage -Name $Bloat | Remove-AppxPackage -ErrorAction Stop | Out-Null
-                Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $Bloat | Remove-AppxProvisionedPackage -Online -ErrorAction Stop
-                Log("$Bloat foi removido com sucesso")
-            } catch {
-                Error("Falha ao remover $Bloat, exceÃ§Ã£o: $($_.Exception.Message)")
-            }
-        }
 
+    foreach ($Bloat in $BloatwareList) {
+        Log("Tentando remover $Bloat")
+        try {
+            Get-AppxPackage -Name $Bloat -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction Stop | Out-Null
+            Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $Bloat | Remove-AppxProvisionedPackage -Online -ErrorAction Stop
+            Log("$Bloat foi removido com sucesso")
+        } catch {
+            Error("Falha ao remover $Bloat, exceção: $($_.Exception.Message)")
+        }
     }
+
     Log("Bloatware foi removido.")
 }
+
 
 
 	# FunÃ§Ã£o para desabilitar o acesso de aplicativos em segundo plano
