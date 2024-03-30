@@ -1,8 +1,8 @@
 # script para windows 11 e 10!
-If (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
-    [Void] [System.Windows.Forms.MessageBox]::Show(
-        "Você não está executando este script como administrador! Você deve usar este script como administrador!", 
-        "", 
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
+    [System.Windows.Forms.MessageBox]::Show(
+        "Você não está executando este script como administrador! Execute-o como administrador para continuar.", 
+        "Erro de Permissão", 
         [System.Windows.Forms.MessageBoxButtons]::OK, 
         [System.Windows.Forms.MessageBoxIcon]::Error
     )
@@ -32,22 +32,15 @@ try {
 
 
 
-function Log($message) { 
-     $timeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" 
-     Write-Host "$timeStamp - $message" }
-
-
-
-# FunÃ§Ã£o para exibir mensagens de log
 function Log($message) {
-    Write-Host $message
+    $timeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "$timeStamp - $message"
 }
-		
-# FunÃ§Ã£o para exibir mensagens de erro
+
 function Error($message) {
- 
     Write-Host "ERRO: $message" -ForegroundColor Red
 }
+
 
 # FunÃ§Ã£o para desabilitar telemetria
 function Disable-Telemetry() {
@@ -252,19 +245,41 @@ function Remove-Bloatware() {
         # Adicione mais aplicativos de bloatware à lista, se necessário
     )
 
+    $removedCount = 0
+
     foreach ($Bloat in $BloatwareList) {
         Log("Tentando remover $Bloat")
         try {
-            Get-AppxPackage -Name $Bloat -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction Stop | Out-Null
-            Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $Bloat | Remove-AppxProvisionedPackage -Online -ErrorAction Stop
-            Log("$Bloat foi removido com sucesso")
+            $app = Get-AppxPackage -Name $Bloat -ErrorAction SilentlyContinue
+            if ($app -ne $null) {
+                $app | Remove-AppxPackage -ErrorAction Stop | Out-Null
+                $removedCount++
+                Log("$Bloat foi removido com sucesso")
+            } else {
+                Log("$Bloat não está presente.")
+            }
+
+            $provisionedApp = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $Bloat -ErrorAction SilentlyContinue
+            if ($provisionedApp -ne $null) {
+                $provisionedApp | Remove-AppxProvisionedPackage -Online -ErrorAction Stop
+                Log("$Bloat (provisioned) foi removido com sucesso")
+            } else {
+                Log("$Bloat (provisioned) não está presente.")
+            }
         } catch {
             Error("Falha ao remover $Bloat, exceção: $($_.Exception.Message)")
         }
     }
 
+    if ($removedCount -gt 0) {
+        Log("Total de $removedCount aplicativos de bloatware removidos.")
+    } else {
+        Log("Nenhum aplicativo de bloatware encontrado para remoção.")
+    }
+    
     Log("Bloatware foi removido.")
 }
+
 
 
 
@@ -450,12 +465,12 @@ function Remove-Edge() {
     $edgeUpdateService = Get-Service -Name "edgeupdate" -ErrorAction SilentlyContinue
     if ($null -ne $edgeUpdateService) {
         try {
-            Set-Service -Name "edgeupdate" -StartupType Disabled -ErrorAction Stop
-            Write-Output "Disabled Microsoft Edge update service."
-        } catch {
-            Write-Error "Failed to disable Microsoft Edge update service: ${_}"
-            $errorOccurred = $true
-        }
+    Set-Service -Name "edgeupdate" -StartupType Disabled -ErrorAction Stop
+    Write-Output "Serviço de atualização do Microsoft Edge desativado com sucesso."
+} catch {
+    Write-Error "Falha ao desativar o serviço de atualização do Microsoft Edge: $_"
+    $errorOccurred = $true
+}
     } else {
         Write-Output "Microsoft Edge update service not found."
     }
@@ -463,16 +478,17 @@ function Remove-Edge() {
     $job = Start-Job -ScriptBlock {
         param ($errorOccurred)
         $edgePackage = Get-AppxPackage -AllUsers *Microsoft.MicrosoftEdge* -ErrorAction SilentlyContinue
-        if ($edgePackage) {
-            $edgePackage | Remove-AppxPackage -ErrorAction SilentlyContinue
-            if ($?) {
-                Write-Output "Microsoft Edge has been removed!"
-            } else {
-                $errorOccurred = $true
-            }
-        } else {
-            Write-Output "Microsoft Edge not found."
-        }
+       if ($edgePackage) {
+    $edgePackage | Remove-AppxPackage -ErrorAction SilentlyContinue
+    if ($?) {
+        Write-Output "Microsoft Edge foi removido com sucesso!"
+    } else {
+        $errorOccurred = $true
+    }
+} else {
+    Write-Output "Microsoft Edge não foi encontrado."
+}
+
 
         $edgeProvisionedPackage = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" -ErrorAction SilentlyContinue
         if ($edgeProvisionedPackage) {
