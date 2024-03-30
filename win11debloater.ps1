@@ -130,7 +130,7 @@ function Disable-PrivacySettings() {
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance" -Name "fAllowToGetHelp" -Type DWord -Value 0
 }
 
-# FunÃ§Ã£o para desabilitar serviÃ§os especÃ­ficos
+# Função para desabilitar serviÃ§os especÃ­ficos
 function Disable-Services() {
     Log("Disabling specified services...")
     
@@ -212,9 +212,20 @@ function Disable-Services() {
     }
     
     Log("Specified services have been disabled.")
+
+    # Limpar quaisquer serviços que possam ter sido desabilitados, mas ainda estejam em execução
+    foreach ($Service in $Services) {
+        if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
+            Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
+            Log("Stopped $($Service.DisplayName) service.")
+        }
+    }
+    
+    Log("All disabled services have been stopped.")
 }
 
-# FunÃ§Ã£o para remover bloatware
+
+# Função para remover bloatware
 function Remove-Bloatware() {
     Log("Removendo bloatware, aguarde...")
 
@@ -278,12 +289,9 @@ function Remove-Bloatware() {
     }
     
     Log("Bloatware foi removido.")
-
-    # Limpar o trabalho após a remoção do bloatware
-    Remove-Job -Name "Remove-Bloatware" -ErrorAction SilentlyContinue
 }
 
-	# FunÃ§Ã£o para desabilitar o acesso de aplicativos em segundo plano
+	# Função para desabilitar o acesso de aplicativos em segundo plano
 function DisableBackgroundAppAccess() {
     Log("Disabling Background application access...")
     Get-ChildItem -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" | ForEach-Object {
@@ -604,7 +612,7 @@ function install-programs() {
 do {
     Clear-Host
     Write-Host "Windows Debloater Script WIN11/10" -ForegroundColor Cyan
-    Write-Host "Escolha uma opção:"
+    Write-Host "`nEscolha uma opção:"
     Write-Host "1. Desabilitar Telemetria"
     Write-Host "2. Desabilitar Histórico de Atividades e Rastreamento de Localização"
     Write-Host "3. Remover Bloatware"
@@ -616,7 +624,7 @@ do {
     Write-Host "9. Ocultar Pesquisa"
     Write-Host "10. Remover Edge"
     Write-Host "11. Programas"
-    Write-Host "0. Sair"
+    Write-Host "0. Sair`n"
 
     $choice = Read-Host "Digite o número da opção e pressione Enter"
 
@@ -625,17 +633,18 @@ do {
         "2" { Disable-PrivacySettings }
         "3" { Remove-Bloatware }
         "4" { Disable-Services }
-        "5" { disable-Cortana }
+        "5" { Disable-Cortana }
         "6" { DisableBingSearchInStartMenu }
         "7" { Update-Tweaks }
         "8" { DisableBackgroundAppAccess }
         "9" { Hide-Search }
         "10" { Remove-Edge }
-        "11" { install-programs }   
+        "11" { Install-Programs }   
         "0" { break }
-        default { Write-Host "Escolha invalida, tente novamente." }
+        default { Write-Host "Escolha inválida, tente novamente." }
     }
 
     Read-Host "Pressione Enter para continuar..."
 
-} while ($choice -ne "0") {}
+} while ($choice -ne "0")
+
