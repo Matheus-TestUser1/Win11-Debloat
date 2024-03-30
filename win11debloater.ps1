@@ -278,10 +278,10 @@ function Remove-Bloatware() {
     }
     
     Log("Bloatware foi removido.")
+
+    # Limpar o trabalho após a remoção do bloatware
+    Remove-Job -Name "Remove-Bloatware" -ErrorAction SilentlyContinue
 }
-
-
-
 
 	# FunÃ§Ã£o para desabilitar o acesso de aplicativos em segundo plano
 function DisableBackgroundAppAccess() {
