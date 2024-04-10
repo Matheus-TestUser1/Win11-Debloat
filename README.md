@@ -14,6 +14,9 @@ iwr -useb https://bit.ly/3VyJ1Z7 | iex
 Verificação de Segurança
 
 Este script é seguro de usar. Você pode verificar a segurança do arquivo executável por meio do serviço VirusTotal.
+```
+https://www.virustotal.com/gui/file/3ca871a9928d268f2cfcc137eafb04f1871474274d9f1d3c0f43ba7869ff6fbf/details
+```
 
 # Recursos
 
