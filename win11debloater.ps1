@@ -521,13 +521,8 @@ function Remove-Edge() {
     # Limpa o trabalho
     Remove-Job $job
 }
-
-
-
- # Função para mostrar o submenu com uma lista de programas para baixar
-# Verificar se o Chocolatey já está instalado
-
-function install-programs() {
+ 
+function Install-Programs() {
     # Verificar se o Chocolatey já está instalado
     if (-not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
         Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
@@ -543,15 +538,23 @@ function install-programs() {
         Write-Host "Chocolatey foi instalado com sucesso!"
     }
 
+
     do {
         Clear-Host
         Write-Host "Escolha um programa para baixar:"
-        Write-Host "1. 7-Zip"
-        Write-Host "2. Google Chrome"
-        Write-Host "3. WinRAR"
-        Write-Host "4. Firefox"
-        Write-Host "5. SimpleWall"
-        Write-Host "6. OOSO10 (ANTISPY)"
+        Write-Host "1. 7-Zip" "          2. Google Chrome"
+        Write-Host "3. WinRAR" "         4. Firefox"
+        Write-Host "5. SimpleWall" "     6. OOSO10 (ANTISPY)"
+        Write-Host "7. Adobe Acrobat Reader DC" "8. Visual Studio Code"
+        Write-Host "9. VLC Media Player" " 10. Spotify"
+        Write-Host "11. Microsoft Office" "12. Adobe Creative Cloud"
+        Write-Host "13. Skype" "          14. Zoom"
+        Write-Host "15. GIMP" "           16. Audacity"
+        Write-Host "17. Discord" "        18. Python"
+        Write-Host "19. Git" "            20. Notepad++"
+        Write-Host "21. WinSCP" "         22. Steam"
+        Write-Host "23. Java Development Kit (JDK)" "24. Node.js"
+        Write-Host "25. Docker" "         26. VirtualBox"
         Write-Host "0. Voltar"
 
         $choice = Read-Host "Digite o número da opção e pressione Enter"
@@ -597,6 +600,66 @@ function install-programs() {
                     Write-Host "Erro ao baixar ou executar o arquivo: $_"
                 }
             }
+            "7" {
+                choco install adobereader -y
+            }
+            "8" {
+                choco install vscode -y
+            }
+            "9" {
+                choco install vlc -y
+            }
+            "10" {
+                choco install spotify -y
+            }
+            "11" {
+                choco install microsoft-office-deploy -y
+            }
+            "12" {
+                choco install adobe-creative-cloud -y
+            }
+            "13" {
+                choco install skype -y
+            }
+            "14" {
+                choco install zoom -y
+            }
+            "15" {
+                choco install gimp -y
+            }
+            "16" {
+                choco install audacity -y
+            }
+            "17" {
+                choco install discord -y
+            }
+            "18" {
+                choco install python -y
+            }
+            "19" {
+                choco install git -y
+            }
+            "20" {
+                choco install notepadplusplus -y
+            }
+            "21" {
+                choco install winscp -y
+            }
+            "22" {
+                choco install steam -y
+            }
+            "23" {
+                choco install jdk8 -y
+            }
+            "24" {
+                choco install nodejs -y
+            }
+            "25" {
+                choco install docker-desktop -y
+            }
+            "26" {
+                choco install virtualbox -y
+            }
             "0" { return }
             default {
                 Write-Host "Escolha inválida, tente novamente."
@@ -606,9 +669,7 @@ function install-programs() {
     } while ($true)
 }
 
-
-
-# Menu de opções
+# Menu de opções principal
 do {
     Clear-Host
     Write-Host "Windows Debloater Script WIN11/10" -ForegroundColor Cyan
@@ -623,7 +684,7 @@ do {
     Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
     Write-Host "9. Ocultar Pesquisa"
     Write-Host "10. Remover Edge"
-    Write-Host "11. Programas"
+    Write-Host "11. Instalar Programas"
     Write-Host "0. Sair`n"
 
     $choice = Read-Host "Digite o número da opção e pressione Enter"
