@@ -669,17 +669,23 @@ function Install-Programs() {
     } while ($true)
 }
 
-# Menu de opções principal
+ # Menu de opções principal
 do {
     Clear-Host
     Write-Host "Windows Debloater Script WIN11/10" -ForegroundColor Cyan
     Write-Host "`nEscolha uma opção:"
-    Write-Host "`n1. Desabilitar Telemetria" "`t`t`t2. Desabilitar Histórico de Atividades e Rastreamento de Localização"
-    Write-Host "`n3. Remover Bloatware" "`t`t`t4. Desabilitar Serviços Específicos"
-    Write-Host "`n5. Desabilitar Cortana" "`t`t`t6. Desabilitar Bing No Menu Iniciar"
-    Write-Host "`n7. Conclusão" "`t`t`t8. Desabilitar Acesso de Aplicativos em Segundo Plano"
-    Write-Host "`n9. Ocultar Pesquisa" "`t`t`t10. Remover Edge"
-    Write-Host "`n11. Instalar Programas" "`t`t`t0. Sair`n"
+    Write-Host "1. Desabilitar Telemetria"
+    Write-Host "2. Desabilitar Histórico de Atividades e Rastreamento de Localização"
+    Write-Host "3. Remover Bloatware"
+    Write-Host "4. Desabilitar Serviços Específicos"
+    Write-Host "5. Desabilitar Cortana"
+    Write-Host "6. Desabilitar Bing No Menu Iniciar"
+    Write-Host "7. Conclusão"
+    Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
+    Write-Host "9. Ocultar Pesquisa"
+    Write-Host "10. Remover Edge"
+    Write-Host "11. Instalar Programas"
+    Write-Host "0. Sair`n"
 
     $choice = Read-Host "Digite o número da opção e pressione Enter"
 
