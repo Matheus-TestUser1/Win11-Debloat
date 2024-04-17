@@ -145,7 +145,6 @@ function Disable-Services() {
         #"PushToInstall",      # Necessário para a Microsoft Store
         #"icssvc",             # Ponto de Acesso Móvel
         "MixedRealityOpenXRSvc", # Realidade Mista
-        "WMPNetworkSvc",       # Compartilhamento do Windows Media Player
         #"LicenseManager",     # Gerenciador de Licenças para Microsoft Store
         #"wisvc",              # Programa Insider
         "WerSvc",              # Relatórios de erros
@@ -204,7 +203,7 @@ function Disable-Services() {
     foreach ($Service in $Services) {
         if (-not $Service.StartsWith("#")) {
             Get-Service -Name $Service -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled
-            if ((Get-Service -Name $Service).Status -eq "Running") {
+            if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
                 Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
                 Log("Trying to disable $($Service.DisplayName)")
             }
@@ -223,7 +222,6 @@ function Disable-Services() {
     
     Log("All disabled services have been stopped.")
 }
-
 
 # Função para remover bloatware
 function Remove-Bloatware() {
@@ -545,7 +543,7 @@ function Install-Programs() {
         Write-Host "1. 7-Zip" "          2. Google Chrome"
         Write-Host "3. WinRAR" "         4. Firefox"
         Write-Host "5. SimpleWall" "     6. OOSO10 (ANTISPY)"
-        Write-Host "7. Adobe Acrobat Reader DC" "8. Visual Studio Code"
+        Write-Host "7. Adobe Acrobat Reader  DC" "8. Visual Studio Code"
         Write-Host "9. VLC Media Player" " 10. Spotify"
         Write-Host "11. Microsoft Office" "12. Adobe Creative Cloud"
         Write-Host "13. Skype" "          14. Zoom"
