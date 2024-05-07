@@ -29,3 +29,8 @@ Win11Debloater oferece os seguintes recursos:
 Observação: Use este script com cuidado, pois a remoção de alguns componentes pode afetar o funcionamento do sistema. É aconselhável criar um ponto de restauração do sistema antes de usar o script.
 
 Sinta-se à vontade para contribuir, relatar problemas ou fazer sugestões para melhorar este script.
+
+# CRÉDITOS
+
+https://github.com/teeotsa/windows-11-debloat
+ part of the code extracted from this, and modified by me,the importance of AI to develop projects.
