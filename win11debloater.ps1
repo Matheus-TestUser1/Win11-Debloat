@@ -667,6 +667,67 @@ function Install-Programs() {
     } while ($true)
 }
 
+# Função para limpar pastas temporárias
+function Limpar-Temp {
+    Write-Output "Limpando pastas temporárias..."
+    Remove-Item -Path "$env:TEMP\*" -Force -Recurse
+    Remove-Item -Path "$env:windir\Temp\*" -Force -Recurse
+    Write-Output "Pastas temporárias limpas com sucesso."
+}
+
+# Função para verificar a saúde do PC
+function Verificar-Saude {
+    Write-Output "Verificando a saúde do PC..."
+    # Você pode adicionar aqui comandos para verificar a saúde do sistema, como chkdsk, sfc, etc.
+    chkdsk /f /r # Exemplo de verificação de disco
+    sfc /scannow # Exemplo de verificação de arquivos do sistema
+    Write-Output "Verificação de saúde concluída."
+}
+
+# Função para criar um ponto de restauração do sistema
+function Criar-PontoRestauracao {
+    Write-Output "Criando um ponto de restauração do sistema..."
+    $null = Checkpoint-Computer -Description "Ponto de restauração criado manualmente"
+    Write-Output "Ponto de restauração criado com sucesso."
+}
+
+# Função para restaurar recursos com DISM
+function Restaurar-Recursos {
+    Write-Output "Restaurando recursos com DISM..."
+    # Você pode adicionar aqui comandos para restaurar recursos usando o DISM
+    # Exemplo: DISM /Online /Cleanup-Image /RestoreHealth
+    Start-Process -FilePath "DISM" -ArgumentList "/Online", "/Cleanup-Image", "/RestoreHealth" -NoNewWindow -Wait
+    Write-Output "Recursos restaurados com sucesso."
+}
+
+# Submenu Manutenção
+function Repair-Pc {
+    do {
+        Clear-Host
+        Write-Output "Menu de Manutenção:"
+        Write-Output "1. Limpar Temp"
+        Write-Output "2. Verificar Saúde"
+        Write-Output "3. Criar Ponto de Restauração"
+        Write-Output "4. Restaurar Recursos"
+        Write-Output "0. Voltar"
+
+        $opcao = Read-Host "Opção"
+
+        switch ($opcao) {
+            '1' { Limpar-Temp }
+            '2' { Verificar-Saude }
+            '3' { Criar-PontoRestauracao }
+            '4' { Restaurar-Recursos }
+            '0' { break }
+            default { Write-Output "Opção inválida." }
+        }
+
+        Write-Output ""
+        Write-Output "Pressione Enter para continuar..."
+        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    } while ($opcao -ne '0')
+}
+
  # Menu de opções principal
 do {
     Clear-Host
@@ -683,6 +744,7 @@ do {
     Write-Host "9. Ocultar Pesquisa"
     Write-Host "10. Remover Edge"
     Write-Host "11. Instalar Programas"
+    Write-Host "12. Manutenção De Pc"
     Write-Host "0. Sair`n"
 
     $choice = Read-Host "Digite o número da opção e pressione Enter"
@@ -699,6 +761,7 @@ do {
         "9" { Hide-Search }
         "10" { Remove-Edge }
         "11" { Install-Programs }   
+	"12" { Repair-Pc } 
         "0" { break }
         default { Write-Host "Escolha inválida, tente novamente." }
     }
