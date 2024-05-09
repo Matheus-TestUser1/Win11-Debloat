@@ -288,6 +288,7 @@ function Remove-Bloatware() {
     
     Log("Bloatware foi removido.")
 }
+44
 
 	# Função para desabilitar o acesso de aplicativos em segundo plano
 function DisableBackgroundAppAccess() {
