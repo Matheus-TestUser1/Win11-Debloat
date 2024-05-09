@@ -461,8 +461,6 @@ function Update-Tweaks() {
     Log("Tweaks are done!")
 }
     
-
-
 function Remove-Edge() {
     Write-Output "Removing Microsoft Edge..."
     $errorOccurred = $false
@@ -494,7 +492,6 @@ function Remove-Edge() {
 } else {
     Write-Output "Microsoft Edge não foi encontrado."
 }
-
 
         $edgeProvisionedPackage = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" -ErrorAction SilentlyContinue
         if ($edgeProvisionedPackage) {
@@ -536,23 +533,22 @@ function Install-Programs() {
         Write-Host "Chocolatey foi instalado com sucesso!"
     }
 
-
     do {
         Clear-Host
         Write-Host "Escolha um programa para baixar:"
-        Write-Host "1. 7-Zip" "          2. Google Chrome"
-        Write-Host "3. WinRAR" "         4. Firefox"
-        Write-Host "5. SimpleWall" "     6. OOSO10 (ANTISPY)"
-        Write-Host "7. Adobe Acrobat Reader  DC" "8. Visual Studio Code"
-        Write-Host "9. VLC Media Player" " 10. Spotify"
-        Write-Host "11. Microsoft Office" "12. Adobe Creative Cloud"
-        Write-Host "13. Skype" "          14. Zoom"
-        Write-Host "15. GIMP" "           16. Audacity"
-        Write-Host "17. Discord" "        18. Python"
-        Write-Host "19. Git" "            20. Notepad++"
-        Write-Host "21. WinSCP" "         22. Steam"
-        Write-Host "23. Java Development Kit (JDK)" "24. Node.js"
-        Write-Host "25. Docker" "         26. VirtualBox"
+        Write-Host "1. 7-Zip           2. Google Chrome"
+        Write-Host "3. WinRAR          4. Firefox"
+        Write-Host "5. SimpleWall      6. OOSO10 (ANTISPY)"
+        Write-Host "7. Adobe Acrobat Reader DC      8. Visual Studio Code"
+        Write-Host "9. VLC Media Player             10. Spotify"
+        Write-Host "11. Microsoft Office            12. Adobe Creative Cloud"
+        Write-Host "13. Skype                        14. Zoom"
+        Write-Host "15. GIMP                         16. Audacity"
+        Write-Host "17. Discord                      18. Python"
+        Write-Host "19. Git                          20. Notepad++"
+        Write-Host "21. WinSCP                       22. Steam"
+        Write-Host "23. Java Development Kit (JDK)   24. Node.js"
+        Write-Host "25. Docker                       26. VirtualBox"
         Write-Host "0. Voltar"
 
         $choice = Read-Host "Digite o número da opção e pressione Enter"
@@ -660,10 +656,13 @@ function Install-Programs() {
             }
             "0" { return }
             default {
-                Write-Host "Escolha inválida, tente novamente."
-                Read-Host "Pressione Enter para continuar..."
+                Write-Host "Opção inválida. Tente novamente."
             }
         }
+
+        Write-Host ""
+        Write-Host "Pressione Enter para continuar..."
+        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
     } while ($true)
 }
 
