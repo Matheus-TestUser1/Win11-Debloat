@@ -236,7 +236,7 @@ function Remove-Bloatware() {
         "Microsoft.MicrosoftSolitaireCollection",
         #"Microsoft.MicrosoftStickyNotes", # Problema relatado por V1ce | Pode causar problemas com o sysprep
         "Microsoft.PowerAutomateDesktop", # Obrigado V1ce
-        "Microsoft.SecHealthUI", # Obrigado V1ce
+       # "Microsoft.SecHealthUI", # Obrigado V1ce
         "Microsoft.People",
         "Microsoft.Todos",
         #"Microsoft.Windows.Photos",
