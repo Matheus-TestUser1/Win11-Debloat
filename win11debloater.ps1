@@ -1,4 +1,4 @@
-# script para windows 11 e 10!
+# Ensure the script is running as an Administrator
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
     [System.Windows.Forms.MessageBox]::Show(
         "Você não está executando este script como administrador! Execute-o como administrador para continuar.", 
@@ -9,44 +9,44 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     Exit
 }
 
-$description = "Ponto de restauração criado por script PowerShell"
-try {
-    $restorePoint = Get-ComputerRestorePoint
-    if ($null -eq $restorePoint)  {
-        Write-Host "Criando um ponto de restauração para sua segurança..."
-        Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
-    } else {
-        Write-Host "Um ponto de restauração já existe. Deseja criar outro ponto de restauração? (S/N)"
-        $choice = Read-Host
-        if ($choice -eq "S" -or $choice -eq "s") {
-            Write-Host "Criando um novo ponto de restauração..."
-            Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
-        } else {
-            Write-Host "Continuando sem criar um novo ponto de restauração..."
-        }
-    }
-} catch {
-    Write-Host "Erro ao criar o ponto de restauração: $_"
-}
-
-
-
-
+# Function to log messages with timestamp
 function Log($message) {
     $timeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     Write-Host "$timeStamp - $message"
 }
 
+# Function to log errors
 function Error($message) {
     Write-Host "ERRO: $message" -ForegroundColor Red
 }
 
+# Function to create a system restore point
+function Create-RestorePoint {
+    $description = "Ponto de restauração criado por script PowerShell"
+    try {
+        $restorePoint = Get-ComputerRestorePoint
+        if ($null -eq $restorePoint) {
+            Log "Criando um ponto de restauração para sua segurança..."
+            Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
+        } else {
+            Write-Host "Um ponto de restauração já existe. Deseja criar outro ponto de restauração? (S/N)"
+            $choice = Read-Host
+            if ($choice -eq "S" -or $choice -eq "s") {
+                Log "Criando um novo ponto de restauração..."
+                Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
+            } else {
+                Log "Continuando sem criar um novo ponto de restauração..."
+            }
+        }
+    } catch {
+        Error "Erro ao criar o ponto de restauração: $_"
+    }
+}
 
-# FunÃ§Ã£o para desabilitar telemetria
-function Disable-Telemetry() {
-    Log("Disabling Telemetry...")
+# Function to disable telemetry
+function Disable-Telemetry {
+    Log "Disabling Telemetry..."
 
-    # Define as chaves e valores do registro que você deseja modificar
     $registrySettings = @{
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection\AllowTelemetry" = 0
         "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection\AllowTelemetry" = 0
@@ -60,296 +60,221 @@ function Disable-Telemetry() {
         "HKLM:\SOFTWARE\Policies\Microsoft\EdgeWebView\AllowTelemetry" = 0
     }
 
-    # Define um loop para percorrer as configurações e aplicá-las
     foreach ($setting in $registrySettings.GetEnumerator()) {
         $key = $setting.Key
         $value = $setting.Value
-        # Verifica se a chave do registro existe, se não, cria-a
-        if (-not (Test-Path $key)) {
-            New-Item -Path $key -Force | Out-Null
-        }
-        # Tenta modificar o registro
         try {
-            # Define o valor do registro
+            if (-not (Test-Path $key)) {
+                New-Item -Path $key -Force | Out-Null
+            }
             Set-ItemProperty -Path $key -Name "(Default)" -Value $value -Type DWORD -Force
-            Write-Host "Configuração atualizada com sucesso: $key"
+            Log "Configuração atualizada com sucesso: $key"
         } catch {
-            Write-Host "Ocorreu um erro ao tentar modificar o registro: $_" -ForegroundColor Red
+            Error "Ocorreu um erro ao tentar modificar o registro: $_"
         }
     }
 
-    Log("Telemetry has been disabled!")
+    Log "Telemetry has been disabled!"
 }
 
-
-# FunÃ§Ã£o para desabilitar histÃ³rico de atividades e rastreamento de localizaÃ§Ã£o
-function Disable-PrivacySettings() {
-    Log("Disabling Activity History...")
+# Function to disable privacy settings
+function Disable-PrivacySettings {
+    Log "Disabling Activity History..."
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "EnableActivityFeed" -Type DWord -Value 0
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "PublishUserActivities" -Type DWord -Value 0
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "UploadUserActivities" -Type DWord -Value 0
-    Log("Disabling Location Tracking...")
-    If (!(Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location")) {
+
+    Log "Disabling Location Tracking..."
+    if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location")) {
         New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" -Name "Value" -Type String -Value "Deny"
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}" -Name "SensorPermissionState" -Type DWord -Value 0
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration" -Name "Status" -Type DWord -Value 0
-    Log("Disabling automatic Maps updates...")
+
+    Log "Disabling automatic Maps updates..."
     Set-ItemProperty -Path "HKLM:\SYSTEM\Maps" -Name "AutoUpdateEnabled" -Type DWord -Value 0
-    Log("Disabling Feedback...")
-    If (!(Test-Path "HKCU:\SOFTWARE\Microsoft\Siuf\Rules")) {
+
+    Log "Disabling Feedback..."
+    if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\Siuf\Rules")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\Siuf\Rules" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Siuf\Rules" -Name "NumberOfSIUFInPeriod" -Type DWord -Value 0
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Name "DoNotShowFeedbackNotifications" -Type DWord -Value 1
     Disable-ScheduledTask -TaskName "Microsoft\Windows\Feedback\Siuf\DmClient" -ErrorAction SilentlyContinue | Out-Null
     Disable-ScheduledTask -TaskName "Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload" -ErrorAction SilentlyContinue | Out-Null
-    Log("Disabling Tailored Experiences...")
-    If (!(Test-Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent")) {
+
+    Log "Disabling Tailored Experiences..."
+    if (-not (Test-Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent")) {
         New-Item -Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent" -Name "DisableTailoredExperiencesWithDiagnosticData" -Type DWord -Value 1
-    Log("Disabling Advertising ID...")
-    If (!(Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo")) {
+
+    Log "Disabling Advertising ID..."
+    if (-not (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo")) {
         New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo" | Out-Null
     }
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo" -Name "DisabledByGroupPolicy" -Type DWord -Value 1
-    Log("Disabling Error reporting...")
+
+    Log "Disabling Error reporting..."
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting" -Name "Disabled" -Type DWord -Value 1
     Disable-ScheduledTask -TaskName "Microsoft\Windows\Windows Error Reporting\QueueReporting" | Out-Null
-    Log("Stopping and disabling Diagnostics Tracking Service...")
+
+    Log "Stopping and disabling Diagnostics Tracking Service..."
     Stop-Service "DiagTrack" -WarningAction SilentlyContinue
     Set-Service "DiagTrack" -StartupType Disabled
-    Log("Stopping and disabling WAP Push Service...")
+
+    Log "Stopping and disabling WAP Push Service..."
     Stop-Service "dmwappushservice" -WarningAction SilentlyContinue
     Set-Service "dmwappushservice" -StartupType Disabled
-    Log("Enabling F8 boot menu options...")
+
+    Log "Enabling F8 boot menu options..."
     bcdedit /set `{current`} bootmenupolicy Legacy | Out-Null
-    Log("Disabling Remote Assistance...")
+
+    Log "Disabling Remote Assistance..."
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance" -Name "fAllowToGetHelp" -Type DWord -Value 0
 }
 
-# Função para desabilitar serviÃ§os especÃ­ficos
-function Disable-Services() {
-    Log("Disabling specified services...")
-    
-    # Lista de serviços a serem desabilitados
+# Function to disable specific services
+function Disable-Services {
+    Log "Disabling specified services..."
+
     $Services = @(
-        "*xbox*",              # Serviços do Xbox
-        "*Xbl*",               # Serviços do Xbox
-        "XboxNetApiSvc",       # Serviços do Xbox
-        #"LanmanWorkstation",  # Causa problemas com unidades mapeadas e programas de compartilhamento de arquivos!
-        #"workfolderssvc",     # Causa problemas com unidades mapeadas e programas de compartilhamento de arquivos!
-        "WSearch",             # Pesquisa do Windows
-        #"PushToInstall",      # Necessário para a Microsoft Store
-        #"icssvc",             # Ponto de Acesso Móvel
-        "MixedRealityOpenXRSvc", # Realidade Mista
-        #"LicenseManager",     # Gerenciador de Licenças para Microsoft Store
-        #"wisvc",              # Programa Insider
-        "WerSvc",              # Relatórios de erros
-        #"WalletService",      # Serviço de Carteira
-        #"lmhosts",            # Auxiliar TCP/IP NetBIOS
-        "SysMain",             # SuperFetch - Seguro para desativar se você tiver um SSD
-        #"svsvc",              # Verificador de Ponto
-        #"sppsvc",             # Proteção de Software
-        "SCPolicySvc",         # Política de Remoção de Cartão Inteligente
-        "ScDeviceEnum",        # Enumeração de Dispositivos de Cartão Inteligente
-        "SCardSvr",            # Cartão Inteligente
-        #"LanmanServer",       # Servidor - Causa problemas com unidades mapeadas e programas de compartilhamento de arquivos!
-        #"SensorService",      # Serviço de Sensores
-        "RetailDemo",          # Serviço de Demonstração no Varejo
-        "RemoteRegistry",      # Registro Remoto - Emitido por V1ce
-        #"UmRdpService",       # Serviços de Desktop Remoto do Modo de Usuário - Emitido por V1ce
-        #"TermService",        # Serviços de Desktop Remoto - Emitido por V1ce
-        #"SessionEnv",         # Configuração de Desktop Remoto - Emitido por V1ce
-        #"RasMan",             # Gerenciador de Conexão de Acesso Remoto - Emitido por V1ce
-        #"RasAuto",            # Gerenciador de Conexão Automática de Acesso Remoto - Emitido por V1ce
-        #"TroubleshootingSvc", # Serviço de Solução de Problemas Recomendado
-        #"RmSvc",              # Serviço de Gerenciamento de Rádio (Pode ser necessário para laptops)
-        #"QWAVE",              # Experiência de Áudio e Vídeo do Windows de Qualidade
-        #"wercplsupport",      # Suporte ao Painel de Controle de Relatórios de Problemas
-        #"Spooler",            # Spooler de Impressão - Emitido por V1ce
-        #"PrintNotify",        # Extensões e Notificações de Impressora - Emitido por V1ce
-        #"PhoneSvc",           # Serviço de Telefone
-        #"SEMgrSvc",           # Gerenciador de Pagamentos e NFC/SE
-        "WpcMonSvc",           # Controles Parentais
-        #"CscService",         # Arquivos Offline
-        #"InstallService",     # Serviço de Instalação da Microsoft Store
-        #"SmsRouter",          # Roteador de SMS do Windows Microsoft
-        #"smphost",            # Serviço SMP de Espaços de Armazenamento Microsoft
-        #"NgcCtnrSvc",         # Contêiner de Passaporte Microsoft
-        #"MsKeyboardFilter",   # Filtro de Teclado Microsoft ... obrigado (.AtomRadar treasury #8267) pelo relatório. 
-        #"cloudidsvc",         # Serviço de Identidade na Nuvem da Microsoft
-        #"wlidsvc",            # Assistente de Logon da Conta Microsoft
-        "*diagnosticshub*",   # Coletor Padrão de Serviços de Diagnóstico do Microsoft (R)
-        #"iphlpsvc",           # Assistente de IP - Pode quebrar alguns Clientes VPN
-        #"lfsvc",              # Serviço de Geolocalização - Emitido por V1ce
-        #"fhsvc",              # Serviço de Histórico de Arquivos - Emitido por V1ce
-        #"Fax",                # Fax - Emitido por V1ce
-        #"embeddedmode",       # Modo Incorporado
-        "MapsBroker",          # Gerenciador de Mapas Baixados
-        "TrkWks",              # Cliente de Rastreamento de Link Distribuído
-        "WdiSystemHost",       # Host do Sistema de Diagnóstico
-        "WdiServiceHost",      # Host do Serviço de Diagnóstico
-        "DPS",                 # Serviço de Política de Diagnóstico
-        "diagsvc"              # Serviço de Execução de Diagnóstico
-        #"DusmSvc",            # Uso de Dados
-        #"VaultSvc",           # Gerenciador de Credenciais
-        #"AppReadiness",       # Preparo do Aplicativo
+        "*xbox*", "XboxNetApiSvc", "WSearch", "MixedRealityOpenXRSvc", "WerSvc",
+        "SCPolicySvc", "ScDeviceEnum", "SCardSvr", "RetailDemo", "RemoteRegistry",
+        "MapsBroker", "TrkWks", "WdiSystemHost", "WdiServiceHost", "DPS", "diagsvc"
     )
 
-    # Desabilitar os serviços listados
     foreach ($Service in $Services) {
         if (-not $Service.StartsWith("#")) {
             Get-Service -Name $Service -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled
             if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
                 Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
-                Log("Trying to disable $($Service.DisplayName)")
+                Log "Trying to disable $($Service.DisplayName)"
             }
         }
     }
-    
-    Log("Specified services have been disabled.")
 
-    # Limpar quaisquer serviços que possam ter sido desabilitados, mas ainda estejam em execução
+    Log "Specified services have been disabled."
+
     foreach ($Service in $Services) {
         if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
             Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
-            Log("Stopped $($Service.DisplayName) service.")
+            Log "Stopped $($Service.DisplayName) service."
         }
     }
-    
-    Log("All disabled services have been stopped.")
+
+    Log "All disabled services have been stopped."
 }
 
-# Função para remover bloatware
-function Remove-Bloatware() {
-    Log("Removendo bloatware, aguarde...")
+# Function to remove bloatware
+function Remove-Bloatware {
+    Log "Removendo bloatware, aguarde..."
 
     $BloatwareList = @(
-        "Microsoft.BingNews",
-        "Microsoft.BingWeather",
-        "Microsoft.GetHelp",
-        "Microsoft.Getstarted",
-        "Microsoft.MicrosoftOfficeHub",
-        "Microsoft.MicrosoftSolitaireCollection",
-        #"Microsoft.MicrosoftStickyNotes", # Problema relatado por V1ce | Pode causar problemas com o sysprep
-        "Microsoft.PowerAutomateDesktop", # Obrigado V1ce
-       # "Microsoft.SecHealthUI", # Obrigado V1ce
-        "Microsoft.People",
-        "Microsoft.Todos",
-        #"Microsoft.Windows.Photos",
-        "Microsoft.WindowsAlarms",
-        #"Microsoft.WindowsCamera",
-        "microsoft.windowscommunicationsapps",
-        "Microsoft.WindowsFeedbackHub",
-        "Microsoft.WindowsMaps",
-        "Microsoft.WindowsSoundRecorder",
-        #"Microsoft.YourPhone", # Realmente útil
-        "Microsoft.ZuneMusic",
-        "Microsoft.ZuneVideo",
-        "MicrosoftTeams",
-        "ClipChamp.ClipChamp"
-        # Adicione mais aplicativos de bloatware à lista, se necessário
+        "Microsoft.BingNews", "Microsoft.BingWeather", "Microsoft.GetHelp", "Microsoft.Getstarted",
+        "Microsoft.MicrosoftOfficeHub", "Microsoft.MicrosoftSolitaireCollection", "Microsoft.PowerAutomateDesktop",
+        "Microsoft.People", "Microsoft.Todos", "Microsoft.WindowsAlarms", "microsoft.windowscommunicationsapps",
+        "Microsoft.WindowsFeedbackHub", "Microsoft.WindowsMaps", "Microsoft.WindowsSoundRecorder", "Microsoft.ZuneMusic",
+        "Microsoft.ZuneVideo", "MicrosoftTeams", "ClipChamp.ClipChamp"
     )
 
     $removedCount = 0
 
     foreach ($Bloat in $BloatwareList) {
-        Log("Tentando remover $Bloat")
+        Log "Tentando remover $Bloat"
         try {
             $app = Get-AppxPackage -Name $Bloat -ErrorAction SilentlyContinue
             if ($app -ne $null) {
                 $app | Remove-AppxPackage -ErrorAction Stop | Out-Null
                 $removedCount++
-                Log("$Bloat foi removido com sucesso")
+                Log "$Bloat foi removido com sucesso"
             } else {
-                Log("$Bloat não está presente.")
+                Log "$Bloat não está presente."
             }
 
             $provisionedApp = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $Bloat -ErrorAction SilentlyContinue
             if ($provisionedApp -ne $null) {
                 $provisionedApp | Remove-AppxProvisionedPackage -Online -ErrorAction Stop
-                Log("$Bloat (provisioned) foi removido com sucesso")
+                Log "$Bloat (provisioned) foi removido com sucesso"
             } else {
-                Log("$Bloat (provisioned) não está presente.")
+                Log "$Bloat (provisioned) não está presente."
             }
         } catch {
-            Error("Falha ao remover $Bloat, exceção: $($_.Exception.Message)")
+            Error "Falha ao remover $Bloat, exceção: $($_.Exception.Message)"
         }
     }
 
     if ($removedCount -gt 0) {
-        Log("Total de $removedCount aplicativos de bloatware removidos.")
+        Log "Total de $removedCount aplicativos de bloatware removidos."
     } else {
-        Log("Nenhum aplicativo de bloatware encontrado para remoção.")
+        Log "Nenhum aplicativo de bloatware encontrado para remoção."
     }
-    
-    Log("Bloatware foi removido.")
-}
-44
 
-	# Função para desabilitar o acesso de aplicativos em segundo plano
-function DisableBackgroundAppAccess() {
-    Log("Disabling Background application access...")
+    Log "Bloatware foi removido."
+}
+
+# Function to disable background app access
+function Disable-BackgroundAppAccess {
+    Log "Disabling Background application access..."
     Get-ChildItem -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" | ForEach-Object {
         Set-ItemProperty -Path $_.PsPath -Name "Disabled" -Type DWord -Value 1
         Set-ItemProperty -Path $_.PsPath -Name "DisabledByUser" -Type DWord -Value 1
     }
-    if (!(Test-Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications")) {
+    if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -Type DWord -Value 1
-    Log("Disabled Background application access")
+    Log "Disabled Background application access"
 }
 
-# FunÃ§Ã£o para desabilitar a pesquisa do Bing no Menu Iniciar
-function DisableBingSearchInStartMenu() {
-    Log("Disabling Bing Search in Start Menu...")
+# Function to disable Bing search in start menu
+function Disable-BingSearchInStartMenu {
+    Log "Disabling Bing Search in Start Menu..."
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -Type DWord -Value 0
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "CortanaConsent" -Type DWord -Value 0
-    if (!(Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search")) {
+    if (-not (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search")) {
         New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Name "DisableWebSearch" -Type DWord -Value 1
-    Log("Stopping and disabling Windows Search indexing service...")
+    Log "Stopping and disabling Windows Search indexing service..."
     Stop-Service "WSearch" -WarningAction SilentlyContinue
     Set-Service "WSearch" -StartupType Disabled
 }
 
-# FunÃ§Ã£o para esconder a barra de pesquisa da barra de tarefas
-function Hide-Search() {
-    Log("Hiding Taskbar Search icon / box...")
+# Function to hide taskbar search
+function Hide-Search {
+    Log "Hiding Taskbar Search icon / box..."
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 0
 }
 
-# FunÃ§Ã£o para desabilitar Cortana
-function Disable-Cortana() {    
-    Log("Disabling Cortana...")
-    if (!(Test-Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings")) {
+# Function to disable Cortana
+function Disable-Cortana {    
+    Log "Disabling Cortana..."
+    if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings" -Name "AcceptedPrivacyPolicy" -Type DWord -Value 0
-    if (!(Test-Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization")) {
+    if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization" -Name "RestrictImplicitTextCollection" -Type DWord -Value 1
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization" -Name "RestrictImplicitInkCollection" -Type DWord -Value 1
-    if (!(Test-Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore")) {
+    if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" -Name "HarvestContacts" -Type DWord -Value 0
-    if (!(Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search")) {
+    if (-not (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search")) {
         New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Name "AllowCortana" -Type DWord -Value 0
     Stop-Process -Name SearchApp -Force
     Stop-Process -Name explorer -Force
-    Log("Disabled Cortana")
+    Log "Disabled Cortana"
 }
 
-function Update-Tweaks() {
+# Function to update tweaks
+function Update-Tweaks {
     $scheduledTasksToDisable = @(
         "\Microsoft\Windows\ApplicationData\CleanupTemporaryState",
         "\Microsoft\Windows\ApplicationData\DsSvcCleanup",
@@ -396,7 +321,7 @@ function Update-Tweaks() {
 
     foreach ($task in $scheduledTasksToDisable) {
         Disable-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue | Out-Null
-        Log("Task `"$task`" was disabled")
+        Log "Task `"$task`" was disabled"
     }
 
     $registryKeys = @(
@@ -410,7 +335,7 @@ function Update-Tweaks() {
     )
 
     foreach ($key in $registryKeys) {
-        if (!(Test-Path $key)) {
+        if (-not (Test-Path $key)) {
             New-Item -Path $key -Force -ErrorAction SilentlyContinue
         }
     }
@@ -449,7 +374,7 @@ function Update-Tweaks() {
         @{
             Key = 'HKCU:\System\GameConfigStore';
             Name = 'Win32_AutoGameModeDefaultProfile';
-            Value = ([byte[]](0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)) -as [byte[]];
+            Value = ([byte[]](0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)) -as [byte[]];
             Type = 'Binary';
         }
     )
@@ -459,23 +384,23 @@ function Update-Tweaks() {
     }
 
     Stop-Process -Name explorer
-    Log("Tweaks are done!")
+    Log "Tweaks are done!"
 }
-    
-function Remove-Edge() {
+
+# Function to remove Microsoft Edge
+function Remove-Edge {
     Write-Output "Removing Microsoft Edge..."
     $errorOccurred = $false
 
-    # Desabilita o serviço de atualização automática do Microsoft Edge, se presente
     $edgeUpdateService = Get-Service -Name "edgeupdate" -ErrorAction SilentlyContinue
     if ($null -ne $edgeUpdateService) {
         try {
-    Set-Service -Name "edgeupdate" -StartupType Disabled -ErrorAction Stop
-    Write-Output "Serviço de atualização do Microsoft Edge desativado com sucesso."
-} catch {
-    Write-Error "Falha ao desativar o serviço de atualização do Microsoft Edge: $_"
-    $errorOccurred = $true
-}
+            Set-Service -Name "edgeupdate" -StartupType Disabled -ErrorAction Stop
+            Write-Output "Serviço de atualização do Microsoft Edge desativado com sucesso."
+        } catch {
+            Write-Error "Falha ao desativar o serviço de atualização do Microsoft Edge: $_"
+            $errorOccurred = $true
+        }
     } else {
         Write-Output "Microsoft Edge update service not found."
     }
@@ -483,16 +408,16 @@ function Remove-Edge() {
     $job = Start-Job -ScriptBlock {
         param ($errorOccurred)
         $edgePackage = Get-AppxPackage -AllUsers *Microsoft.MicrosoftEdge* -ErrorAction SilentlyContinue
-       if ($edgePackage) {
-    $edgePackage | Remove-AppxPackage -ErrorAction SilentlyContinue
-    if ($?) {
-        Write-Output "Microsoft Edge foi removido com sucesso!"
-    } else {
-        $errorOccurred = $true
-    }
-} else {
-    Write-Output "Microsoft Edge não foi encontrado."
-}
+        if ($edgePackage) {
+            $edgePackage | Remove-AppxPackage -ErrorAction SilentlyContinue
+            if ($?) {
+                Write-Output "Microsoft Edge foi removido com sucesso!"
+            } else {
+                $errorOccurred = $true
+            }
+        } else {
+            Write-Output "Microsoft Edge não foi encontrado."
+        }
 
         $edgeProvisionedPackage = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" -ErrorAction SilentlyContinue
         if ($edgeProvisionedPackage) {
@@ -503,23 +428,18 @@ function Remove-Edge() {
         }
     } -ArgumentList $errorOccurred
 
-    # Espera até que o trabalho termine
     Wait-Job $job
-
-    # Exibe mensagem de erro, se houver
     if ($errorOccurred) {
         Write-Error "Failed to remove Microsoft Edge."
     } else {
-        # Obtém o resultado do trabalho
         $result = Receive-Job $job
     }
 
-    # Limpa o trabalho
     Remove-Job $job
 }
- 
-function Install-Programs() {
-    # Verificar se o Chocolatey já está instalado
+
+# Function to install programs using Chocolatey
+function Install-Programs {
     if (-not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
         Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
 
@@ -555,38 +475,20 @@ function Install-Programs() {
         $choice = Read-Host "Digite o número da opção e pressione Enter"
 
         switch ($choice) {
-            "1" {
-                choco install 7zip -y
-            }
-            "2" {
-                choco install googlechrome -y
-            }
-            "3" {
-                choco install winrar -y
-            }
-            "4" {
-                choco install firefox -y
-            }
-            "5" {
-                choco install simplewall -y
-            }
+            "1" { choco install 7zip -y }
+            "2" { choco install googlechrome -y }
+            "3" { choco install winrar -y }
+            "4" { choco install firefox -y }
+            "5" { choco install simplewall -y }
             "6" {
                 $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
-
-                # Construir o caminho completo para a pasta de Downloads do usuário
                 $userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
                 $downloadPath = Join-Path $userProfile "Downloads"
                 $localPath = Join-Path $downloadPath "OOSU10.exe"
-
-                # Baixar o arquivo
                 try {
                     Invoke-WebRequest -Uri $url -OutFile $localPath -ErrorAction Stop
-
-                    # Verificar se o arquivo foi baixado corretamente
                     if (Test-Path $localPath) {
                         Write-Host "Arquivo baixado com sucesso em $localPath."
-                        
-                        # Executar o arquivo
                         Start-Process -FilePath $localPath -Wait
                     } else {
                         Write-Host "Falha ao baixar o arquivo."
@@ -595,70 +497,28 @@ function Install-Programs() {
                     Write-Host "Erro ao baixar ou executar o arquivo: $_"
                 }
             }
-            "7" {
-                choco install adobereader -y
-            }
-            "8" {
-                choco install vscode -y
-            }
-            "9" {
-                choco install vlc -y
-            }
-            "10" {
-                choco install spotify -y
-            }
-            "11" {
-                choco install microsoft-office-deploy -y
-            }
-            "12" {
-                choco install adobe-creative-cloud -y
-            }
-            "13" {
-                choco install skype -y
-            }
-            "14" {
-                choco install zoom -y
-            }
-            "15" {
-                choco install gimp -y
-            }
-            "16" {
-                choco install audacity -y
-            }
-            "17" {
-                choco install discord -y
-            }
-            "18" {
-                choco install python -y
-            }
-            "19" {
-                choco install git -y
-            }
-            "20" {
-                choco install notepadplusplus -y
-            }
-            "21" {
-                choco install winscp -y
-            }
-            "22" {
-                choco install steam -y
-            }
-            "23" {
-                choco install jdk8 -y
-            }
-            "24" {
-                choco install nodejs -y
-            }
-            "25" {
-                choco install docker-desktop -y
-            }
-            "26" {
-                choco install virtualbox -y
-            }
+            "7" { choco install adobereader -y }
+            "8" { choco install vscode -y }
+            "9" { choco install vlc -y }
+            "10" { choco install spotify -y }
+            "11" { choco install microsoft-office-deploy -y }
+            "12" { choco install adobe-creative-cloud -y }
+            "13" { choco install skype -y }
+            "14" { choco install zoom -y }
+            "15" { choco install gimp -y }
+            "16" { choco install audacity -y }
+            "17" { choco install discord -y }
+            "18" { choco install python -y }
+            "19" { choco install git -y }
+            "20" { choco install notepadplusplus -y }
+            "21" { choco install winscp -y }
+            "22" { choco install steam -y }
+            "23" { choco install jdk8 -y }
+            "24" { choco install nodejs -y }
+            "25" { choco install docker-desktop -y }
+            "26" { choco install virtualbox -y }
             "0" { return }
-            default {
-                Write-Host "Opção inválida. Tente novamente."
-            }
+            default { Write-Host "Opção inválida. Tente novamente." }
         }
 
         Write-Host ""
@@ -667,41 +527,38 @@ function Install-Programs() {
     } while ($true)
 }
 
-# Função para limpar pastas temporárias
-function Limpar-Temp {
+# Function to clean temporary folders
+function Clean-Temp {
     Write-Output "Limpando pastas temporárias..."
     Remove-Item -Path "$env:TEMP\*" -Force -Recurse
     Remove-Item -Path "$env:windir\Temp\*" -Force -Recurse
     Write-Output "Pastas temporárias limpas com sucesso."
 }
 
-# Função para verificar a saúde do PC
-function Verificar-Saude {
+# Function to check PC health
+function Check-PCHealth {
     Write-Output "Verificando a saúde do PC..."
-    # Você pode adicionar aqui comandos para verificar a saúde do sistema, como chkdsk, sfc, etc.
-    chkdsk /f /r # Exemplo de verificação de disco
-    sfc /scannow # Exemplo de verificação de arquivos do sistema
+    chkdsk /f /r
+    sfc /scannow
     Write-Output "Verificação de saúde concluída."
 }
 
-# Função para criar um ponto de restauração do sistema
-function Criar-PontoRestauracao {
+# Function to create a system restore point
+function Create-RestorePoint {
     Write-Output "Criando um ponto de restauração do sistema..."
     $null = Checkpoint-Computer -Description "Ponto de restauração criado manualmente"
     Write-Output "Ponto de restauração criado com sucesso."
 }
 
-# Função para restaurar recursos com DISM
-function Restaurar-Recursos {
+# Function to restore resources using DISM
+function Restore-Resources {
     Write-Output "Restaurando recursos com DISM..."
-    # Você pode adicionar aqui comandos para restaurar recursos usando o DISM
-    # Exemplo: DISM /Online /Cleanup-Image /RestoreHealth
     Start-Process -FilePath "DISM" -ArgumentList "/Online", "/Cleanup-Image", "/RestoreHealth" -NoNewWindow -Wait
     Write-Output "Recursos restaurados com sucesso."
 }
 
-# Submenu Manutenção
-function Repair-Pc {
+# Submenu Maintenance
+function Maintenance-Menu {
     do {
         Clear-Host
         Write-Output "Menu de Manutenção:"
@@ -711,13 +568,13 @@ function Repair-Pc {
         Write-Output "4. Restaurar Recursos"
         Write-Output "0. Voltar"
 
-        $opcao = Read-Host "Opção"
+        $option = Read-Host "Opção"
 
-        switch ($opcao) {
-            '1' { Limpar-Temp }
-            '2' { Verificar-Saude }
-            '3' { Criar-PontoRestauracao }
-            '4' { Restaurar-Recursos }
+        switch ($option) {
+            '1' { Clean-Temp }
+            '2' { Check-PCHealth }
+            '3' { Create-RestorePoint }
+            '4' { Restore-Resources }
             '0' { break }
             default { Write-Output "Opção inválida." }
         }
@@ -725,10 +582,10 @@ function Repair-Pc {
         Write-Output ""
         Write-Output "Pressione Enter para continuar..."
         $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
-    } while ($opcao -ne '0')
+    } while ($option -ne '0')
 }
 
- # Menu de opções principal
+# Main menu
 do {
     Clear-Host
     Write-Host "Windows Debloater Script WIN11/10" -ForegroundColor Cyan
@@ -755,13 +612,13 @@ do {
         "3" { Remove-Bloatware }
         "4" { Disable-Services }
         "5" { Disable-Cortana }
-        "6" { DisableBingSearchInStartMenu }
+        "6" { Disable-BingSearchInStartMenu }
         "7" { Update-Tweaks }
-        "8" { DisableBackgroundAppAccess }
+        "8" { Disable-BackgroundAppAccess }
         "9" { Hide-Search }
         "10" { Remove-Edge }
         "11" { Install-Programs }   
-	"12" { Repair-Pc } 
+        "12" { Maintenance-Menu } 
         "0" { break }
         default { Write-Host "Escolha inválida, tente novamente." }
     }
@@ -769,4 +626,3 @@ do {
     Read-Host "Pressione Enter para continuar..."
 
 } while ($choice -ne "0")
-
