@@ -21,7 +21,7 @@ function Error($message) {
 }
 
 # Function to create a system restore point
-function Create-RestorePoint {
+function New-RestorePoint {
     $description = "Ponto de restauração criado por script PowerShell"
     try {
         $restorePoint = Get-ComputerRestorePoint
@@ -185,7 +185,7 @@ function Remove-Bloatware {
         Log "Tentando remover $Bloat"
         try {
             $app = Get-AppxPackage -Name $Bloat -ErrorAction SilentlyContinue
-            if ($app -ne $null) {
+            if ($null -ne $app) {
                 $app | Remove-AppxPackage -ErrorAction Stop | Out-Null
                 $removedCount++
                 Log "$Bloat foi removido com sucesso"
@@ -194,7 +194,7 @@ function Remove-Bloatware {
             }
 
             $provisionedApp = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like $Bloat -ErrorAction SilentlyContinue
-            if ($provisionedApp -ne $null) {
+            if ($null -ne $provisionedApp) {
                 $provisionedApp | Remove-AppxProvisionedPackage -Online -ErrorAction Stop
                 Log "$Bloat (provisioned) foi removido com sucesso"
             } else {
@@ -305,7 +305,7 @@ function Update-Tweaks {
         "\Microsoft\Windows\MUI\LPRemove",
         "\Microsoft\Windows\Multimedia\SystemSoundsService",
         "\Microsoft\Windows\OfflineFiles\BackgroundSynchronization",
-        "\Microsoft\Windows\OfflineFiles\LogonSynchronization",
+        "\Microsoft\Microsoft\Windows\OfflineFiles\LogonSynchronization",
         "\Microsoft\Windows\Printing\EduPrintProv",
         "\Microsoft\Windows\Printing\PrinterCleanupTask",
         "\Microsoft\Windows\PushToInstall\LoginCheck",
@@ -407,7 +407,7 @@ function Remove-Edge {
 
     $job = Start-Job -ScriptBlock {
         param ($errorOccurred)
-        $edgePackage = Get-AppxPackage -AllUsers *Microsoft.MicrosoftEdge* -ErrorAction SilentlyContinue
+        $edgePackage = Get-AppxPackage -Name "*Microsoft.MicrosoftEdge*" -AllUsers -ErrorAction SilentlyContinue
         if ($edgePackage) {
             $edgePackage | Remove-AppxPackage -ErrorAction SilentlyContinue
             if ($?) {
@@ -428,14 +428,14 @@ function Remove-Edge {
         }
     } -ArgumentList $errorOccurred
 
-    Wait-Job $job
+    Wait-Job $job -Timeout 300
     if ($errorOccurred) {
         Write-Error "Failed to remove Microsoft Edge."
     } else {
-        $result = Receive-Job $job
+        Receive-Job $job
     }
 
-    Remove-Job $job
+    Remove-Job $job -Force
 }
 
 # Function to install programs using Chocolatey
@@ -528,7 +528,7 @@ function Install-Programs {
 }
 
 # Function to clean temporary folders
-function Clean-Temp {
+function Clear-Temp {
     Write-Output "Limpando pastas temporárias..."
     Remove-Item -Path "$env:TEMP\*" -Force -Recurse
     Remove-Item -Path "$env:windir\Temp\*" -Force -Recurse
@@ -536,7 +536,7 @@ function Clean-Temp {
 }
 
 # Function to check PC health
-function Check-PCHealth {
+function Test-PCHealth {
     Write-Output "Verificando a saúde do PC..."
     chkdsk /f /r
     sfc /scannow
@@ -544,7 +544,7 @@ function Check-PCHealth {
 }
 
 # Function to create a system restore point
-function Create-RestorePoint {
+function New-RestorePoint {
     Write-Output "Criando um ponto de restauração do sistema..."
     $null = Checkpoint-Computer -Description "Ponto de restauração criado manualmente"
     Write-Output "Ponto de restauração criado com sucesso."
@@ -558,7 +558,7 @@ function Restore-Resources {
 }
 
 # Submenu Maintenance
-function Maintenance-Menu {
+function Show-MaintenanceMenu {
     do {
         Clear-Host
         Write-Output "Menu de Manutenção:"
@@ -571,9 +571,9 @@ function Maintenance-Menu {
         $option = Read-Host "Opção"
 
         switch ($option) {
-            '1' { Clean-Temp }
-            '2' { Check-PCHealth }
-            '3' { Create-RestorePoint }
+            '1' { Clear-Temp }
+            '2' { Test-PCHealth }
+            '3' { New-RestorePoint }
             '4' { Restore-Resources }
             '0' { break }
             default { Write-Output "Opção inválida." }
@@ -618,7 +618,7 @@ do {
         "9" { Hide-Search }
         "10" { Remove-Edge }
         "11" { Install-Programs }   
-        "12" { Maintenance-Menu } 
+        "12" { Show-MaintenanceMenu } 
         "0" { break }
         default { Write-Host "Escolha inválida, tente novamente." }
     }
