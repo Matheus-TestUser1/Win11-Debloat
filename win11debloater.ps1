@@ -24,26 +24,25 @@ function Error($message) {
 function New-RestorePoint {
     $description = "Ponto de restauração criado por script PowerShell"
     try {
-        # Check for existing restore points
-        $restorePoint = Get-ComputerRestorePoint
-        if ($null -eq $restorePoint) {
-            # Create restore point if none exists
-            Write-Host "Criando um ponto de restauração para sua segurança..."
-            Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
-        } else {
-            # Ask user if they want to create another restore point
-            Write-Host "Um ponto de restauração já existe. Deseja criar outro ponto de restauração? (S/N)"
+        # Verifica se pontos de restauração existem
+        $restorePoints = Get-ComputerRestorePoint | Sort-Object -Property CreationTime -Descending
+        if ($null -ne $restorePoints -and $restorePoints[0].Description -eq $description) {
+            Write-Host "Já existe um ponto de restauração recente com o mesmo nome."
+            Write-Host "Deseja criar outro ponto de restauração? (S/N)"
             $choice = Read-Host
-            if ($choice -eq "S" -or $choice -eq "s") {
-                Write-Host "Criando um novo ponto de restauração..."
-                Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
-            } else {
+            if ($choice -notin @("S", "s")) {
                 Write-Host "Continuando sem criar um novo ponto de restauração..."
+                return
             }
         }
+
+        # Cria um novo ponto de restauração
+        Write-Host "Criando um novo ponto de restauração para sua segurança..."
+        Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
+        Write-Host "Ponto de restauração criado com sucesso!"
     } catch {
-        # Handle errors during restore point creation
-        Write-Host "Erro ao criar o ponto de restauração: $_" -ForegroundColor Red
+        # Lida com erros ao criar o ponto de restauração
+        Write-Host "Erro ao criar o ponto de restauração: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
