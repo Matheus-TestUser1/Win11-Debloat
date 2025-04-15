@@ -115,39 +115,93 @@ function Disable-PrivacySettings {
 
 # Function to disable specific services
 function Disable-Services {
-    Log "Disabling specified services..."
+    Log "Iniciando processo de desativação de serviços..."
+    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Log "Executando como: $currentUser em $timestamp"
 
-    # Lista de serviços a serem desabilitados
+    # Lista de serviços para desativar
     $Services = @(
-        "XboxNetApiSvc", "WSearch", "MixedRealityOpenXRSvc", "WerSvc",
-        "SCPolicySvc", "ScDeviceEnum", "SCardSvr", "RetailDemo", "RemoteRegistry",
-        "MapsBroker", "TrkWks", "WdiSystemHost", "WdiServiceHost", "DPS", "diagsvc"
+        "*xbox*",          # Todos os serviços Xbox
+        "XboxNetApiSvc",   # Serviço específico do Xbox
+        "WSearch",         # Windows Search
+        "MixedRealityOpenXRSvc",
+        "WerSvc",         # Windows Error Reporting
+        "SCPolicySvc",    # Smart Card
+        "ScDeviceEnum",   # Smart Card Device Enumeration
+        "SCardSvr",       # Smart Card
+        "RetailDemo",     # Modo de demonstração
+        "RemoteRegistry", # Registro remoto
+        "MapsBroker",     # Serviço de mapas
+        "TrkWks",        # Distributed Link Tracking
+        "WdiSystemHost", # Diagnostic System Host
+        "WdiServiceHost", # Diagnostic Service Host
+        "DPS",           # Diagnostic Policy Service
+        "diagsvc"        # Diagnostic Service
     )
 
-    foreach ($Service in $Services) {
+    # Contador para estatísticas
+    $stats = @{
+        Processed = 0
+        Disabled = 0
+        Stopped = 0
+        Failed = 0
+        NotFound = 0
+    }
+
+    foreach ($ServicePattern in $Services) {
         try {
-            # Verifica se o serviço existe
-            $serviceObject = Get-Service -Name $Service -ErrorAction SilentlyContinue
-            if ($null -ne $serviceObject) {
-                # Define o tipo de inicialização como Desativado
-                Set-Service -Name $Service -StartupType Disabled -ErrorAction SilentlyContinue
-                
-                # Para o serviço se ele estiver em execução
-                if ($serviceObject.Status -eq "Running") {
-                    Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue
-                    Log "Service $($serviceObject.DisplayName) has been stopped and disabled."
-                } else {
-                    Log "Service $($serviceObject.DisplayName) is already stopped."
-                }
-            } else {
-                Log "Service $Service not found. Skipping..."
+            # Pula comentários
+            if ($ServicePattern.StartsWith("#")) {
+                continue
             }
-        } catch {
-            Error "An error occurred while processing service $Service: $_"
+
+            # Obtém serviços correspondentes ao padrão
+            $matchingServices = Get-Service -Name $ServicePattern -ErrorAction SilentlyContinue
+            
+            if ($null -eq $matchingServices) {
+                $stats.NotFound++
+                Log "Serviço não encontrado: $ServicePattern"
+                continue
+            }
+
+            # Processa cada serviço encontrado
+            foreach ($svc in $matchingServices) {
+                $stats.Processed++
+                
+                try {
+                    # Tenta desabilitar o serviço
+                    Set-Service -Name $svc.Name -StartupType Disabled -ErrorAction Stop
+                    $stats.Disabled++
+                    Log "Serviço desativado com sucesso: $($svc.DisplayName)"
+
+                    # Se o serviço estiver em execução, tenta pará-lo
+                    if ($svc.Status -eq "Running") {
+                        Stop-Service -Name $svc.Name -Force -ErrorAction Stop
+                        $stats.Stopped++
+                        Log "Serviço interrompido com sucesso: $($svc.DisplayName)"
+                    }
+                }
+                catch {
+                    $stats.Failed++
+                    Error "Falha ao processar $($svc.DisplayName): $($_.Exception.Message)"
+                }
+            }
+        }
+        catch {
+            $stats.Failed++
+            Error "Erro ao processar padrão $ServicePattern`: $($_.Exception.Message)"
         }
     }
 
-    Log "All specified services have been processed."
+    # Relatório final
+    Log "=== Resumo da operação ==="
+    Log "Total processado: $($stats.Processed)"
+    Log "Serviços desativados: $($stats.Disabled)"
+    Log "Serviços parados: $($stats.Stopped)"
+    Log "Não encontrados: $($stats.NotFound)"
+    Log "Falhas: $($stats.Failed)"
+    Log "Operação concluída em $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 }
 
 # Function to remove bloatware
