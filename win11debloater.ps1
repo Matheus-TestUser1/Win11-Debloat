@@ -21,29 +21,11 @@ function Error($message) {
 }
 
 # Function to create a system restore point
+# Function to create a system restore point
 function New-RestorePoint {
-    $description = "Ponto de restauração criado por script PowerShell"
-    try {
-        # Verifica se pontos de restauração existem
-        $restorePoints = Get-ComputerRestorePoint | Sort-Object -Property CreationTime -Descending
-        if ($null -ne $restorePoints -and $restorePoints[0].Description -eq $description) {
-            Write-Host "Já existe um ponto de restauração recente com o mesmo nome."
-            Write-Host "Deseja criar outro ponto de restauração? (S/N)"
-            $choice = Read-Host
-            if ($choice -notin @("S", "s")) {
-                Write-Host "Continuando sem criar um novo ponto de restauração..."
-                return
-            }
-        }
-
-        # Cria um novo ponto de restauração
-        Write-Host "Criando um novo ponto de restauração para sua segurança..."
-        Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
-        Write-Host "Ponto de restauração criado com sucesso!"
-    } catch {
-        # Lida com erros ao criar o ponto de restauração
-        Write-Host "Erro ao criar o ponto de restauração: $($_.Exception.Message)" -ForegroundColor Red
-    }
+    Write-Output "Criando um ponto de restauração do sistema..."
+    $null = Checkpoint-Computer -Description "Ponto de restauração criado manualmente"
+    Write-Output "Ponto de restauração criado com sucesso."
 }
 
 # Function to disable telemetry
