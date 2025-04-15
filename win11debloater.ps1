@@ -20,13 +20,6 @@ function Error($message) {
     Write-Host "ERRO: $message" -ForegroundColor Red
 }
 
-# Function to create a system restore point
-# Function to create a system restore point
-function New-RestorePoint {
-    Write-Output "Criando um ponto de restauração do sistema..."
-    $null = Checkpoint-Computer -Description "Ponto de restauração criado manualmente"
-    Write-Output "Ponto de restauração criado com sucesso."
-}
 
 # Function to disable telemetry
 function Disable-Telemetry {
