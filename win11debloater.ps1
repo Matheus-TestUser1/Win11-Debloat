@@ -115,6 +115,9 @@ function Disable-PrivacySettings {
 
 # Function to disable specific services
 function Disable-Services {
+    # Configura a codificação para UTF-8
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
     Log "Iniciando processo de desativação de serviços..."
     $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -170,16 +173,20 @@ function Disable-Services {
                 $stats.Processed++
                 
                 try {
+                    # Verifica status atual do serviço
+                    $currentStatus = $svc.Status
+                    $currentStartType = (Get-Service -Name $svc.Name).StartType
+
                     # Tenta desabilitar o serviço
                     Set-Service -Name $svc.Name -StartupType Disabled -ErrorAction Stop
                     $stats.Disabled++
-                    Log "Serviço desativado com sucesso: $($svc.DisplayName)"
+                    Log "Serviço desativado: $($svc.DisplayName)"
 
                     # Se o serviço estiver em execução, tenta pará-lo
-                    if ($svc.Status -eq "Running") {
+                    if ($currentStatus -eq "Running") {
                         Stop-Service -Name $svc.Name -Force -ErrorAction Stop
                         $stats.Stopped++
-                        Log "Serviço interrompido com sucesso: $($svc.DisplayName)"
+                        Log "Serviço interrompido: $($svc.DisplayName)"
                     }
                 }
                 catch {
@@ -190,18 +197,18 @@ function Disable-Services {
         }
         catch {
             $stats.Failed++
-            Error "Erro ao processar padrão $ServicePattern`: $($_.Exception.Message)"
+            Error "Erro ao processar padrão $ServicePattern: $($_.Exception.Message)"
         }
     }
 
     # Relatório final
-    Log "=== Resumo da operação ==="
+    Log "`n=== Resumo da Operação ==="
     Log "Total processado: $($stats.Processed)"
     Log "Serviços desativados: $($stats.Disabled)"
-    Log "Serviços parados: $($stats.Stopped)"
+    Log "Serviços interrompidos: $($stats.Stopped)"
     Log "Não encontrados: $($stats.NotFound)"
     Log "Falhas: $($stats.Failed)"
-    Log "Operação concluída em $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+    Log "Operação concluída em $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')`n"
 }
 
 # Function to remove bloatware
