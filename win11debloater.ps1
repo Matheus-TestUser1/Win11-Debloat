@@ -143,32 +143,37 @@ function Disable-PrivacySettings {
 function Disable-Services {
     Log "Disabling specified services..."
 
+    # Lista de serviços a serem desabilitados
     $Services = @(
-        "*xbox*", "XboxNetApiSvc", "WSearch", "MixedRealityOpenXRSvc", "WerSvc",
+        "XboxNetApiSvc", "WSearch", "MixedRealityOpenXRSvc", "WerSvc",
         "SCPolicySvc", "ScDeviceEnum", "SCardSvr", "RetailDemo", "RemoteRegistry",
         "MapsBroker", "TrkWks", "WdiSystemHost", "WdiServiceHost", "DPS", "diagsvc"
     )
 
     foreach ($Service in $Services) {
-        if (-not $Service.StartsWith("#")) {
-            Get-Service -Name $Service -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled
-            if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
-                Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
-                Log "Trying to disable $($Service.DisplayName)"
+        try {
+            # Verifica se o serviço existe
+            $serviceObject = Get-Service -Name $Service -ErrorAction SilentlyContinue
+            if ($null -ne $serviceObject) {
+                # Define o tipo de inicialização como Desativado
+                Set-Service -Name $Service -StartupType Disabled -ErrorAction SilentlyContinue
+                
+                # Para o serviço se ele estiver em execução
+                if ($serviceObject.Status -eq "Running") {
+                    Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue
+                    Log "Service $($serviceObject.DisplayName) has been stopped and disabled."
+                } else {
+                    Log "Service $($serviceObject.DisplayName) is already stopped."
+                }
+            } else {
+                Log "Service $Service not found. Skipping..."
             }
+        } catch {
+            Error "An error occurred while processing service $Service: $_"
         }
     }
 
-    Log "Specified services have been disabled."
-
-    foreach ($Service in $Services) {
-        if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
-            Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
-            Log "Stopped $($Service.DisplayName) service."
-        }
-    }
-
-    Log "All disabled services have been stopped."
+    Log "All specified services have been processed."
 }
 
 # Function to remove bloatware
