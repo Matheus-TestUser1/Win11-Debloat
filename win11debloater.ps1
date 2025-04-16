@@ -629,10 +629,7 @@ function Show-MaintenanceMenu {
     } while ($option -ne '0')
 }
 
-# Configura a saída do console para UTF-8
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-# Menu Principal
+# Main menu
 do {
     Clear-Host
     Write-Host "Windows Debloater Script WIN11/10" -ForegroundColor Cyan
@@ -642,19 +639,17 @@ do {
     Write-Host "3. Remover Bloatware"
     Write-Host "4. Desabilitar Serviços Específicos"
     Write-Host "5. Desabilitar Cortana"
-    Write-Host "6. Desabilitar Bing no Menu Iniciar"
+    Write-Host "6. Desabilitar Bing No Menu Iniciar"
     Write-Host "7. Conclusão"
     Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
     Write-Host "9. Ocultar Pesquisa"
     Write-Host "10. Remover Edge"
     Write-Host "11. Instalar Programas"
-    Write-Host "12. Manutenção de PC"
+    Write-Host "12. Manutenção De Pc"
     Write-Host "0. Sair`n"
 
-    # Lê a escolha do usuário
     $choice = Read-Host "Digite o número da opção e pressione Enter"
 
-    # Processa a escolha do usuário
     switch ($choice) {
         "1" { Disable-Telemetry }
         "2" { Disable-PrivacySettings }
@@ -666,11 +661,17 @@ do {
         "8" { Disable-BackgroundAppAccess }
         "9" { Hide-Search }
         "10" { Remove-Edge }
-        "11" { Install-Programs }
-        "12" { Show-MaintenanceMenu }
+        "11" { Install-Programs }   
+        "12" { Show-MaintenanceMenu } 
         "0" { break }
-        default { Write-Host "Escolha inválida, tente novamente." -ForegroundColor Red }
+        default { Write-Host "Escolha inválida, tente novamente." }
     }
+
+    Read-Host "Pressione Enter para continuar..."
+
+} while ($choice -ne "0")
+
+
 
     Read-Host "Pressione Enter para continuar..."
 
