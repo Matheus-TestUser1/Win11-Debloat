@@ -670,9 +670,3 @@ do {
     Read-Host "Pressione Enter para continuar..."
 
 } while ($choice -ne "0")
-
-
-
-    Read-Host "Pressione Enter para continuar..."
-
-} while ($choice -ne "0")
