@@ -1,8 +1,4 @@
-# Windows Tweaker GUI - Interface gráfica para o script de otimização do Windows
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-# Verificar se está executando como administrador
+# Ensure the script is running as an Administrator
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
     [System.Windows.Forms.MessageBox]::Show(
         "Você não está executando este script como administrador! Execute-o como administrador para continuar.", 
@@ -13,29 +9,43 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     Exit
 }
 
-# Função para registrar mensagens com timestamp
+# Function to log messages with timestamp
 function Log($message) {
     $timeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "$timeStamp - $message"
-    $logTextBox.AppendText("$logMessage`r`n")
-    $logTextBox.ScrollToCaret()
+    Write-Host "$timeStamp - $message"
 }
 
-# Função para registrar erros
+# Function to log errors
 function Error($message) {
-    $logTextBox.SelectionColor = [System.Drawing.Color]::Red
-    Log "ERRO: $message"
-    $logTextBox.SelectionColor = $logTextBox.ForeColor
+    Write-Host "ERRO: $message" -ForegroundColor Red
 }
 
-# Função para limpar o log
-function Clear-Log {
-    $logTextBox.Clear()
+# Function to create a system restore point
+function New-RestorePoint {
+    $description = "Ponto de restauração criado por script PowerShell"
+    try {
+        $restorePoint = Get-ComputerRestorePoint
+        if ($null -eq $restorePoint) {
+            Log "Criando um ponto de restauração para sua segurança..."
+            Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
+        } else {
+            Write-Host "Um ponto de restauração já existe. Deseja criar outro ponto de restauração? (S/N)"
+            $choice = Read-Host
+            if ($choice -eq "S" -or $choice -eq "s") {
+                Log "Criando um novo ponto de restauração..."
+                Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
+            } else {
+                Log "Continuando sem criar um novo ponto de restauração..."
+            }
+        }
+    } catch {
+        Error "Erro ao criar o ponto de restauração: $_"
+    }
 }
 
-# Função para desativar telemetria
+# Function to disable telemetry
 function Disable-Telemetry {
-    Log "Desativando Telemetria..."
+    Log "Disabling Telemetry..."
 
     $registrySettings = @{
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection\AllowTelemetry" = 0
@@ -64,21 +74,17 @@ function Disable-Telemetry {
         }
     }
 
-    Log "Telemetria foi desativada!"
-    $progressBar.Value = 100
+    Log "Telemetry has been disabled!"
 }
 
-# Função para desativar configurações de privacidade
+# Function to disable privacy settings
 function Disable-PrivacySettings {
-    Log "Desativando Histórico de Atividades..."
-    $progressBar.Value = 10
-    
+    Log "Disabling Activity History..."
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "EnableActivityFeed" -Type DWord -Value 0
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "PublishUserActivities" -Type DWord -Value 0
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" -Name "UploadUserActivities" -Type DWord -Value 0
 
-    $progressBar.Value = 30
-    Log "Desativando Rastreamento de Localização..."
+    Log "Disabling Location Tracking..."
     if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location")) {
         New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" -Force | Out-Null
     }
@@ -86,12 +92,10 @@ function Disable-PrivacySettings {
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}" -Name "SensorPermissionState" -Type DWord -Value 0
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration" -Name "Status" -Type DWord -Value 0
 
-    $progressBar.Value = 40
-    Log "Desativando atualizações automáticas de Mapas..."
+    Log "Disabling automatic Maps updates..."
     Set-ItemProperty -Path "HKLM:\SYSTEM\Maps" -Name "AutoUpdateEnabled" -Type DWord -Value 0
 
-    $progressBar.Value = 50
-    Log "Desativando Feedback..."
+    Log "Disabling Feedback..."
     if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\Siuf\Rules")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\Siuf\Rules" -Force | Out-Null
     }
@@ -100,51 +104,72 @@ function Disable-PrivacySettings {
     Disable-ScheduledTask -TaskName "Microsoft\Windows\Feedback\Siuf\DmClient" -ErrorAction SilentlyContinue | Out-Null
     Disable-ScheduledTask -TaskName "Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload" -ErrorAction SilentlyContinue | Out-Null
 
-    $progressBar.Value = 60
-    Log "Desativando Experiências Personalizadas..."
+    Log "Disabling Tailored Experiences..."
     if (-not (Test-Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent")) {
         New-Item -Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent" -Name "DisableTailoredExperiencesWithDiagnosticData" -Type DWord -Value 1
 
-    $progressBar.Value = 70
-    Log "Desativando ID de Publicidade..."
+    Log "Disabling Advertising ID..."
     if (-not (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo")) {
         New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo" | Out-Null
     }
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo" -Name "DisabledByGroupPolicy" -Type DWord -Value 1
 
-    $progressBar.Value = 80
-    Log "Desativando Relatório de erros..."
+    Log "Disabling Error reporting..."
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting" -Name "Disabled" -Type DWord -Value 1
     Disable-ScheduledTask -TaskName "Microsoft\Windows\Windows Error Reporting\QueueReporting" | Out-Null
 
-    $progressBar.Value = 90
-    Log "Parando e desativando Serviço de Diagnóstico..."
+    Log "Stopping and disabling Diagnostics Tracking Service..."
     Stop-Service "DiagTrack" -WarningAction SilentlyContinue
     Set-Service "DiagTrack" -StartupType Disabled
 
-    Log "Parando e desativando Serviço WAP Push..."
+    Log "Stopping and disabling WAP Push Service..."
     Stop-Service "dmwappushservice" -WarningAction SilentlyContinue
     Set-Service "dmwappushservice" -StartupType Disabled
 
-    $progressBar.Value = 95
-    Log "Habilitando opções de menu de inicialização F8..."
-    bcdedit /set {current} bootmenupolicy Legacy | Out-Null
+    Log "Enabling F8 boot menu options..."
+    bcdedit /set `{current`} bootmenupolicy Legacy | Out-Null
 
-    $progressBar.Value = 100
-    Log "Desativando Assistência Remota..."
+    Log "Disabling Remote Assistance..."
     Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance" -Name "fAllowToGetHelp" -Type DWord -Value 0
-    
-    Log "Configurações de privacidade desativadas com sucesso!"
 }
 
+# Function to disable specific services
+function Disable-Services {
+    Log "Disabling specified services..."
 
+    $Services = @(
+        "*xbox*", "XboxNetApiSvc", "WSearch", "MixedRealityOpenXRSvc", "WerSvc",
+        "SCPolicySvc", "ScDeviceEnum", "SCardSvr", "RetailDemo", "RemoteRegistry",
+        "MapsBroker", "TrkWks", "WdiSystemHost", "WdiServiceHost", "DPS", "diagsvc"
+    )
 
-# Função para remover bloatware
+    foreach ($Service in $Services) {
+        if (-not $Service.StartsWith("#")) {
+            Get-Service -Name $Service -ErrorAction SilentlyContinue | Set-Service -StartupType Disabled
+            if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
+                Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
+                Log "Trying to disable $($Service.DisplayName)"
+            }
+        }
+    }
+
+    Log "Specified services have been disabled."
+
+    foreach ($Service in $Services) {
+        if ((Get-Service -Name $Service -ErrorAction SilentlyContinue).Status -eq "Running") {
+            Stop-Service -Name $Service -Force -ErrorAction SilentlyContinue | Out-Null
+            Log "Stopped $($Service.DisplayName) service."
+        }
+    }
+
+    Log "All disabled services have been stopped."
+}
+
+# Function to remove bloatware
 function Remove-Bloatware {
     Log "Removendo bloatware, aguarde..."
-    $progressBar.Value = 10
 
     $BloatwareList = @(
         "Microsoft.BingNews", "Microsoft.BingWeather", "Microsoft.GetHelp", "Microsoft.Getstarted",
@@ -155,14 +180,8 @@ function Remove-Bloatware {
     )
 
     $removedCount = 0
-    $totalApps = $BloatwareList.Count
-    $appsProcessed = 0
 
     foreach ($Bloat in $BloatwareList) {
-        $appsProcessed++
-        $progressValue = 10 + [int](($appsProcessed / $totalApps) * 80)
-        $progressBar.Value = $progressValue
-        
         Log "Tentando remover $Bloat"
         try {
             $app = Get-AppxPackage -Name $Bloat -ErrorAction SilentlyContinue
@@ -186,8 +205,6 @@ function Remove-Bloatware {
         }
     }
 
-    $progressBar.Value = 100
-
     if ($removedCount -gt 0) {
         Log "Total de $removedCount aplicativos de bloatware removidos."
     } else {
@@ -197,307 +214,415 @@ function Remove-Bloatware {
     Log "Bloatware foi removido."
 }
 
-# Função para desativar acesso de aplicativos em segundo plano
+# Function to disable background app access
 function Disable-BackgroundAppAccess {
-    Log "Desativando acesso de aplicativos em segundo plano..."
-    $progressBar.Value = 20
-    
+    Log "Disabling Background application access..."
     Get-ChildItem -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" | ForEach-Object {
         Set-ItemProperty -Path $_.PsPath -Name "Disabled" -Type DWord -Value 1
         Set-ItemProperty -Path $_.PsPath -Name "DisabledByUser" -Type DWord -Value 1
     }
-    
-    $progressBar.Value = 70
-    
     if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" -Name "GlobalUserDisabled" -Type DWord -Value 1
-    
-    $progressBar.Value = 100
-    Log "Acesso de aplicativos em segundo plano desativado"
+    Log "Disabled Background application access"
 }
 
-# Função para desativar Bing no Menu Iniciar
+# Function to disable Bing search in start menu
 function Disable-BingSearchInStartMenu {
-    Log "Desativando Bing no Menu Iniciar..."
-    $progressBar.Value = 20
-    
+    Log "Disabling Bing Search in Start Menu..."
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "BingSearchEnabled" -Type DWord -Value 0
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "CortanaConsent" -Type DWord -Value 0
-    
-    $progressBar.Value = 50
-    
     if (-not (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search")) {
         New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Name "DisableWebSearch" -Type DWord -Value 1
-    
-    $progressBar.Value = 70
-    
-    Log "Parando e desativando o serviço de indexação de pesquisa do Windows..."
+    Log "Stopping and disabling Windows Search indexing service..."
     Stop-Service "WSearch" -WarningAction SilentlyContinue
     Set-Service "WSearch" -StartupType Disabled
-    
-    $progressBar.Value = 100
-    Log "Bing no Menu Iniciar desativado"
 }
 
-# Função para ocultar pesquisa
+# Function to hide taskbar search
 function Hide-Search {
-    Log "Ocultando ícone/caixa de Pesquisa na Barra de Tarefas..."
-    $progressBar.Value = 50
-    
+    Log "Hiding Taskbar Search icon / box..."
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Type DWord -Value 0
-    
-    $progressBar.Value = 100
-    Log "Ícone/caixa de Pesquisa na Barra de Tarefas ocultado"
 }
 
-# Função para desativar Cortana
+# Function to disable Cortana
 function Disable-Cortana {    
-    Log "Desativando Cortana..."
-    $progressBar.Value = 10
-    
+    Log "Disabling Cortana..."
     if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Personalization\Settings" -Name "AcceptedPrivacyPolicy" -Type DWord -Value 0
-    
-    $progressBar.Value = 30
-    
     if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization" -Name "RestrictImplicitTextCollection" -Type DWord -Value 1
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization" -Name "RestrictImplicitInkCollection" -Type DWord -Value 1
-    
-    $progressBar.Value = 50
-    
     if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore")) {
         New-Item -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" -Name "HarvestContacts" -Type DWord -Value 0
-    
-    $progressBar.Value = 70
-    
     if (-not (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search")) {
         New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Force | Out-Null
     }
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -Name "AllowCortana" -Type DWord -Value 0
-    
-    try {
-        Stop-Process -Name SearchApp -Force -ErrorAction SilentlyContinue
-        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-    } catch {
-        Error "Erro ao reiniciar processos: $($_.Exception.Message)"
-    }
-    
-    $progressBar.Value = 100
-    Log "Cortana desativada"
+    Stop-Process -Name SearchApp -Force
+    Stop-Process -Name explorer -Force
+    Log "Disabled Cortana"
 }
 
-# Função para finalizar ajustes
+# Function to update tweaks
 function Update-Tweaks {
-    Log "Aplicando ajustes finais..."
-    $progressBar.Value = 10
-    
-    # Desativando tarefas agendadas
     $scheduledTasksToDisable = @(
         "\Microsoft\Windows\ApplicationData\CleanupTemporaryState",
         "\Microsoft\Windows\ApplicationData\DsSvcCleanup",
         "\Microsoft\Windows\AppxDeploymentClient\Pre-stagedappcleanup",
         "\Microsoft\Windows\Autochk\Proxy",
-        "\Microsoft\Windows\BrokerInfrastructure\BgTaskRegistrationMaintenanceTask"
+        "\Microsoft\Windows\BrokerInfrastructure\BgTaskRegistrationMaintenanceTask",
+        "\Microsoft\Windows\capabilityaccessmanager\maintenancetasks",
+        "\Microsoft\Windows\Chkdsk\ProactiveScan",
+        "\Microsoft\Windows\Chkdsk\SyspartRepair",
+        "\Microsoft\Windows\Clip\LicenseValidation",
+        "\Microsoft\Windows\CloudExperienceHost\CreateObjectTask",
+        "\Microsoft\Windows\CustomerExperienceImprovementProgram\Consolidator",
+        "\Microsoft\Windows\CustomerExperienceImprovementProgram\UsbCeip",
+        "\Microsoft\Windows\Defrag\ScheduledDefrag",
+        "\Microsoft\Windows\DeviceInformation\Device",
+        "\Microsoft\Windows\DeviceInformation\DeviceUser",
+        "\Microsoft\Windows\DeviceSetup\MetadataRefresh",
+        "\Microsoft\Windows\ExploitGuard\ExploitGuardMDMpolicyRefresh",
+        "\Microsoft\Windows\Feedback\Siuf\DmClient",
+        "\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload",
+        "\Microsoft\Windows\FileHistory\FileHistory*",
+        "\Microsoft\Windows\Location\Notifications",
+        "\Microsoft\Windows\Location\WindowsActionDialog",
+        "\Microsoft\Windows\Maps\MapsToastTask",
+        "\Microsoft\Windows\Maps\MapsUpdateTask",
+        "\Microsoft\Windows\MemoryDiagnostic\ProcessMemoryDiagnosticEvents",
+        "\Microsoft\Windows\MemoryDiagnostic\RunFullMemoryDiagnostic",
+        "\Microsoft\Windows\MUI\LPRemove",
+        "\Microsoft\Windows\Multimedia\SystemSoundsService",
+        "\Microsoft\Windows\OfflineFiles\BackgroundSynchronization",
+        "\Microsoft\Microsoft\Windows\OfflineFiles\LogonSynchronization",
+        "\Microsoft\Windows\Printing\EduPrintProv",
+        "\Microsoft\Windows\Printing\PrinterCleanupTask",
+        "\Microsoft\Windows\PushToInstall\LoginCheck",
+        "\Microsoft\Windows\PushToInstall\Registration",
+        "\Microsoft\Windows\RetailDemo\CleanupOfflineContent",
+        "\Microsoft\Windows\Servicing\StartComponentCleanup",
+        "\Microsoft\Windows\Setup\SetupCleanupTask",
+        "\Microsoft\Windows\SharedPC\AccountCleanup",
+        "\Microsoft\Windows\UNP\RunUpdateNotificationMgr",
+        "\Microsoft\Windows\WindowsErrorReporting\QueueReporting",
+        "\Microsoft\XblGameSave\XblGameSaveTask"
     )
 
-    $totalTasks = $scheduledTasksToDisable.Count
-    $tasksProcessed = 0
-
     foreach ($task in $scheduledTasksToDisable) {
-        $tasksProcessed++
-        $progressValue = 10 + [int](($tasksProcessed / $totalTasks) * 40)
-        $progressBar.Value = $progressValue
-        
-        try {
-            Disable-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue | Out-Null
-            Log "Tarefa "$task" foi desativada"
-        } catch {
-            Error "Erro ao desativar tarefa $task: $($_.Exception.Message)"
-        }
+        Disable-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue | Out-Null
+        Log "Task `"$task`" was disabled"
     }
 
-    $progressBar.Value = 60
-    
-    # Configurando chaves de registro para otimização
     $registryKeys = @(
         "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching",
         "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power",
         "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling",
-        "HKCU:\System\GameConfigStore"
+        "HKCU:\System\GameConfigStore",
+        "HKCU:\Control Panel\Desktop",
+        "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\943c8cb6-6f93-4227-ad87-e9a3feec08d1",
+        "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\2a737441-1930-4402-8d77-b2bebba308a3\d4e98f31-5ffe-4ce1-be31-1b38b384c009\DefaultPowerSchemeValues\8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
     )
 
     foreach ($key in $registryKeys) {
         if (-not (Test-Path $key)) {
-            New-Item -Path $key -Force -ErrorAction SilentlyContinue | Out-Null
+            New-Item -Path $key -Force -ErrorAction SilentlyContinue
         }
     }
-    
-    $progressBar.Value = 80
 
-    # Configurando propriedades para melhor desempenho
-    try {
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" -Name "SearchOrderConfig" -Value 0 -Type DWord
-        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power" -Name "HiberbootEnabled" -Value 0 -Type DWord
-        Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" -Name "PowerThrottlingOff" -Value 1 -Type DWord
-        Set-ItemProperty -Path "HKCU:\System\GameConfigStore" -Name "GameDVR_Enabled" -Value 0 -Type DWord
-    } catch {
-        Error "Erro ao configurar registro: $($_.Exception.Message)"
+    $registryProperties = @(
+        @{
+            Key = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching';
+            Name = 'SearchOrderConfig';
+            Value = 0;
+            Type = 'DWord';
+        },
+        @{
+            Key = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power';
+            Name = 'HiberbootEnabled';
+            Value = 0;
+            Type = 'DWord';
+        },
+        @{
+            Key = 'HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling';
+            Name = 'PowerThrottlingOff';
+            Value = 1;
+            Type = 'DWord';
+        },
+        @{
+            Key = 'HKCU:\System\GameConfigStore';
+            Name = 'GameDVR_Enabled';
+            Value = 0;
+            Type = 'DWord';
+        },
+        @{
+            Key = 'HKCU:\System\GameConfigStore';
+            Name = 'GameDVR_FSEBehaviorMode';
+            Value = 2;
+            Type = 'DWord';
+        },
+        @{
+            Key = 'HKCU:\System\GameConfigStore';
+            Name = 'Win32_AutoGameModeDefaultProfile';
+            Value = ([byte[]](0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)) -as [byte[]];
+            Type = 'Binary';
+        }
+    )
+
+    foreach ($prop in $registryProperties) {
+        New-ItemProperty -LiteralPath $prop.Key -Name $prop.Name -Value $prop.Value -PropertyType $prop.Type -Force -ea SilentlyContinue
     }
-    
-    $progressBar.Value = 95
-    
-    # Reiniciando o explorador de arquivos para aplicar as mudanças
-    try {
-        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-    } catch {
-        Error "Erro ao reiniciar o explorador: $($_.Exception.Message)"
-    }
-    
-    $progressBar.Value = 100
-    Log "Ajustes concluídos com sucesso!"
+
+    Stop-Process -Name explorer
+    Log "Tweaks are done!"
 }
 
-# Função para remover Microsoft Edge
+# Function to remove Microsoft Edge
 function Remove-Edge {
-    Log "Removendo Microsoft Edge..."
-    $progressBar.Value = 10
-    
+    Write-Output "Removing Microsoft Edge..."
+    $errorOccurred = $false
+
     $edgeUpdateService = Get-Service -Name "edgeupdate" -ErrorAction SilentlyContinue
     if ($null -ne $edgeUpdateService) {
         try {
             Set-Service -Name "edgeupdate" -StartupType Disabled -ErrorAction Stop
-            Log "Serviço de atualização do Microsoft Edge desativado com sucesso."
+            Write-Output "Serviço de atualização do Microsoft Edge desativado com sucesso."
         } catch {
-            Error "Falha ao desativar o serviço de atualização do Microsoft Edge: $_"
+            Write-Error "Falha ao desativar o serviço de atualização do Microsoft Edge: $_"
+            $errorOccurred = $true
         }
     } else {
-        Log "Serviço de atualização do Microsoft Edge não encontrado."
+        Write-Output "Microsoft Edge update service not found."
     }
-    
-    $progressBar.Value = 30
-    
-    $edgePackage = Get-AppxPackage -Name "Microsoft.MicrosoftEdge" -AllUsers -ErrorAction SilentlyContinue
-    if ($edgePackage) {
-        try {
+
+    $job = Start-Job -ScriptBlock {
+        param ($errorOccurred)
+        $edgePackage = Get-AppxPackage -Name "*Microsoft.MicrosoftEdge*" -AllUsers -ErrorAction SilentlyContinue
+        if ($edgePackage) {
             $edgePackage | Remove-AppxPackage -ErrorAction SilentlyContinue
-            Log "Microsoft Edge foi removido com sucesso!"
-        } catch {
-            Error "Falha ao remover o Microsoft Edge: $_"
+            if ($?) {
+                Write-Output "Microsoft Edge foi removido com sucesso!"
+            } else {
+                $errorOccurred = $true
+            }
+        } else {
+            Write-Output "Microsoft Edge não foi encontrado."
         }
-    } else {
-        Log "Microsoft Edge não foi encontrado."
-    }
-    
-    $progressBar.Value = 70
-    
-    $edgeProvisionedPackage = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" -ErrorAction SilentlyContinue
-    if ($edgeProvisionedPackage) {
-        try {
+
+        $edgeProvisionedPackage = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq "Microsoft.MicrosoftEdge" -ErrorAction SilentlyContinue
+        if ($edgeProvisionedPackage) {
             $edgeProvisionedPackage | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
-            Log "Pacote provisionado do Microsoft Edge removido com sucesso."
-        } catch {
-            Error "Falha ao remover o pacote provisionado do Microsoft Edge: $_"
+            if (-not $?) {
+                $errorOccurred = $true
+            }
         }
+    } -ArgumentList $errorOccurred
+
+    Wait-Job $job -Timeout 300
+    if ($errorOccurred) {
+        Write-Error "Failed to remove Microsoft Edge."
+    } else {
+        Receive-Job $job
     }
-    
-    $progressBar.Value = 100
-    Log "Processo de remoção do Microsoft Edge concluído."
+
+    Remove-Job $job -Force
 }
 
-# Função para instalar programas usando Chocolatey
+# Function to install programs using Chocolatey
 function Install-Programs {
     if (-not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
-        Log "Chocolatey não está instalado. Instalando Chocolatey..."
-        $progressBar.Value = 10
+        Write-Host "Chocolatey não está instalado. Instalando Chocolatey..."
 
-        try {
-            Set-ExecutionPolicy Bypass -Scope Process -Force
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-            
-            $progressBar.Value = 80
-            
-            if (-not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
-                Error "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e a política de execução."
-                return
-            }
-            
-            $progressBar.Value = 100
-            Log "Chocolatey foi instalado com sucesso!"
-        } catch {
-            $progressBar.Value = 100
-            Error "Erro durante a instalação do Chocolatey: $_"
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+        if (-not (Test-Path 'C:\ProgramData\chocolatey\bin\choco.exe')) {
+            Write-Host "A instalação do Chocolatey falhou. Verifique as configurações do PowerShell e a política de execução."
             return
         }
+        Write-Host "Chocolatey foi instalado com sucesso!"
     }
 
-    # Abrir um formulário de seleção de programas
-    $installForm = New-Object System.Windows.Forms.Form
-    $installForm.Text = "Selecione os programas para instalar"
-    $installForm.Size = New-Object System.Drawing.Size(450, 500)
-    $installForm.StartPosition = "CenterScreen"
-    $installForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
-    $installForm.MaximizeBox = $false
+    do {
+        Clear-Host
+        Write-Host "Escolha um programa para baixar:"
+        Write-Host "1. 7-Zip           2. Google Chrome"
+        Write-Host "3. WinRAR          4. Firefox"
+        Write-Host "5. SimpleWall      6. OOSO10 (ANTISPY)"
+        Write-Host "7. Adobe Acrobat Reader DC      8. Visual Studio Code"
+        Write-Host "9. VLC Media Player             10. Spotify"
+        Write-Host "11. Microsoft Office            12. Adobe Creative Cloud"
+        Write-Host "13. Skype                        14. Zoom"
+        Write-Host "15. GIMP                         16. Audacity"
+        Write-Host "17. Discord                      18. Python"
+        Write-Host "19. Git                          20. Notepad++"
+        Write-Host "21. WinSCP                       22. Steam"
+        Write-Host "23. Java Development Kit (JDK)   24. Node.js"
+        Write-Host "25. Docker                       26. VirtualBox"
+        Write-Host "0. Voltar"
 
-    $programs = @(
-        @{Name="7-Zip"; ID="7zip"},
-        @{Name="Google Chrome"; ID="googlechrome"},
-        @{Name="WinRAR"; ID="winrar"},
-        @{Name="Firefox"; ID="firefox"},
-        @{Name="SimpleWall"; ID="simplewall"},
-        @{Name="OOSO10 (AntiSpy)"; ID="ooso"},
-        @{Name="Adobe Acrobat Reader DC"; ID="adobereader"},
-        @{Name="Visual Studio Code"; ID="vscode"},
-        @{Name="VLC Media Player"; ID="vlc"},
-        @{Name="Spotify"; ID="spotify"},
-        @{Name="Microsoft Office"; ID="microsoft-office-deployment"},
-        @{Name="Adobe Creative Cloud"; ID="adobe-creative-cloud"},
-        @{Name="Skype"; ID="skype"},
-        @{Name="Zoom"; ID="zoom"},
-        @{Name="GIMP"; ID="gimp"},
-        @{Name="Audacity"; ID="audacity"},
-        @{Name="Discord"; ID="discord"},
-        @{Name="Python"; ID="python"},
-        @{Name="Git"; ID="git"},
-        @{Name="Notepad++"; ID="notepadplusplus"},
-        @{Name="WinSCP"; ID="winscp"},
-        @{Name="Steam"; ID="steam"},
-        @{Name="Java (JDK)"; ID="jdk8"},
-        @{Name="Node.js"; ID="nodejs"},
-        @{Name="Docker Desktop"; ID="docker-desktop"},
-        @{Name="VirtualBox"; ID="virtualbox"}
-    )
+        $choice = Read-Host "Digite o número da opção e pressione Enter"
 
-    $checkboxes = @()
-    $y = 20
+        switch ($choice) {
+            "1" { choco install 7zip -y }
+            "2" { choco install googlechrome -y }
+            "3" { choco install winrar -y }
+            "4" { choco install firefox -y }
+            "5" { choco install simplewall -y }
+            "6" {
+                $url = "https://dl5.oo-software.com/files/ooshutup10/OOSU10.exe"
+                $userProfile = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile)
+                $downloadPath = Join-Path $userProfile "Downloads"
+                $localPath = Join-Path $downloadPath "OOSU10.exe"
+                try {
+                    Invoke-WebRequest -Uri $url -OutFile $localPath -ErrorAction Stop
+                    if (Test-Path $localPath) {
+                        Write-Host "Arquivo baixado com sucesso em $localPath."
+                        Start-Process -FilePath $localPath -Wait
+                    } else {
+                        Write-Host "Falha ao baixar o arquivo."
+                    }
+                } catch {
+                    Write-Host "Erro ao baixar ou executar o arquivo: $_"
+                }
+            }
+            "7" { choco install adobereader -y }
+            "8" { choco install vscode -y }
+            "9" { choco install vlc -y }
+            "10" { choco install spotify -y }
+            "11" { choco install microsoft-office-deploy -y }
+            "12" { choco install adobe-creative-cloud -y }
+            "13" { choco install skype -y }
+            "14" { choco install zoom -y }
+            "15" { choco install gimp -y }
+            "16" { choco install audacity -y }
+            "17" { choco install discord -y }
+            "18" { choco install python -y }
+            "19" { choco install git -y }
+            "20" { choco install notepadplusplus -y }
+            "21" { choco install winscp -y }
+            "22" { choco install steam -y }
+            "23" { choco install jdk8 -y }
+            "24" { choco install nodejs -y }
+            "25" { choco install docker-desktop -y }
+            "26" { choco install virtualbox -y }
+            "0" { return }
+            default { Write-Host "Opção inválida. Tente novamente." }
+        }
 
-    foreach ($program in $programs) {
-        $checkbox = New-Object System.Windows.Forms.CheckBox
-        $checkbox.Text = $program.Name
-        $checkbox.Tag = $program.ID
-        $checkbox.Location = New-Object System.Drawing.Point(20, $y)
-        $checkbox.Size = New-Object System.Drawing.Size(180, 20)
-        $installForm.Controls.Add($checkbox)
-        $checkboxes += $checkbox
-        $y += 25
+        Write-Host ""
+        Write-Host "Pressione Enter para continuar..."
+        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    } while ($true)
+}
+
+# Function to clean temporary folders
+function Clear-Temp {
+    Write-Output "Limpando pastas temporárias..."
+    Remove-Item -Path "$env:TEMP\*" -Force -Recurse
+    Remove-Item -Path "$env:windir\Temp\*" -Force -Recurse
+    Write-Output "Pastas temporárias limpas com sucesso."
+}
+
+# Function to check PC health
+function Test-PCHealth {
+    Write-Output "Verificando a saúde do PC..."
+    chkdsk /f /r
+    sfc /scannow
+    Write-Output "Verificação de saúde concluída."
+}
+
+# Function to create a system restore point
+function New-RestorePoint {
+    Write-Output "Criando um ponto de restauração do sistema..."
+    $null = Checkpoint-Computer -Description "Ponto de restauração criado manualmente"
+    Write-Output "Ponto de restauração criado com sucesso."
+}
+
+# Function to restore resources using DISM
+function Restore-Resources {
+    Write-Output "Restaurando recursos com DISM..."
+    Start-Process -FilePath "DISM" -ArgumentList "/Online", "/Cleanup-Image", "/RestoreHealth" -NoNewWindow -Wait
+    Write-Output "Recursos restaurados com sucesso."
+}
+
+# Submenu Maintenance
+function Show-MaintenanceMenu {
+    do {
+        Clear-Host
+        Write-Output "Menu de Manutenção:"
+        Write-Output "1. Limpar Temp"
+        Write-Output "2. Verificar Saúde"
+        Write-Output "3. Criar Ponto de Restauração"
+        Write-Output "4. Restaurar Recursos"
+        Write-Output "0. Voltar"
+
+        $option = Read-Host "Opção"
+
+        switch ($option) {
+            '1' { Clear-Temp }
+            '2' { Test-PCHealth }
+            '3' { New-RestorePoint }
+            '4' { Restore-Resources }
+            '0' { break }
+            default { Write-Output "Opção inválida." }
+        }
+
+        Write-Output ""
+        Write-Output "Pressione Enter para continuar..."
+        $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+    } while ($option -ne '0')
+}
+
+# Main menu
+do {
+    Clear-Host
+    Write-Host "Windows Debloater Script WIN11/10" -ForegroundColor Cyan
+    Write-Host "`nEscolha uma opção:"
+    Write-Host "1. Desabilitar Telemetria"
+    Write-Host "2. Desabilitar Histórico de Atividades e Rastreamento de Localização"
+    Write-Host "3. Remover Bloatware"
+    Write-Host "4. Desabilitar Serviços Específicos"
+    Write-Host "5. Desabilitar Cortana"
+    Write-Host "6. Desabilitar Bing No Menu Iniciar"
+    Write-Host "7. Conclusão"
+    Write-Host "8. Desabilitar Acesso de Aplicativos em Segundo Plano"
+    Write-Host "9. Ocultar Pesquisa"
+    Write-Host "10. Remover Edge"
+    Write-Host "11. Instalar Programas"
+    Write-Host "12. Manutenção De Pc"
+    Write-Host "0. Sair`n"
+
+    $choice = Read-Host "Digite o número da opção e pressione Enter"
+
+    switch ($choice) {
+        "1" { Disable-Telemetry }
+        "2" { Disable-PrivacySettings }
+        "3" { Remove-Bloatware }
+        "4" { Disable-Services }
+        "5" { Disable-Cortana }
+        "6" { Disable-BingSearchInStartMenu }
+        "7" { Update-Tweaks }
+        "8" { Disable-BackgroundAppAccess }
+        "9" { Hide-Search }
+        "10" { Remove-Edge }
+        "11" { Install-Programs }   
+        "12" { Show-MaintenanceMenu } 
+        "0" { break }
+        default { Write-Host "Escolha inválida, tente novamente." }
     }
 
-    $buttonInstall = New-Object System.Windows.Forms.Button
-    $buttonInstall.Text = "Instalar Selecionados"
-    $buttonInstall.Location = New-Object System.Drawing.Point(130, $y + 10)
-    $buttonInstall.Size = New-Object System.Drawing.Size(180, 30)
-    $installForm.Controls.Add($buttonInstall)
+    Read-Host "Pressione Enter para continuar..."
 
-        $installationLog = New-Object System.Windows.Forms.TextBox
-    }
+} while ($choice -ne "0")
