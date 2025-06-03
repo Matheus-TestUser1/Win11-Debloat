@@ -876,125 +876,126 @@ function Show-MaintenanceMenu {
 do {
     Clear-Host
     
-    # Header com design melhorado
-    Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║                                                              ║" -ForegroundColor Cyan
-    Write-Host "║            🚀 WINDOWS DEBLOATER SCRIPT WIN11/10 🚀            ║" -ForegroundColor Yellow
-    Write-Host "║                                                              ║" -ForegroundColor Cyan
-    Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    # Header simples
+    Write-Host "=================================================================" -ForegroundColor Cyan
+    Write-Host "                                                                 " -ForegroundColor Cyan
+    Write-Host "            WINDOWS DEBLOATER SCRIPT WIN11/10                    " -ForegroundColor Yellow
+    Write-Host "                                                                 " -ForegroundColor Cyan
+    Write-Host "=================================================================" -ForegroundColor Cyan
     Write-Host ""
     
-    # Seção de Privacidade e Telemetria
-    Write-Host "┌─ 🔒 PRIVACIDADE & SEGURANÇA ─────────────────────────────────┐" -ForegroundColor Green
-    Write-Host "│  1️⃣  Desabilitar Telemetria                                 │" -ForegroundColor White
-    Write-Host "│  2️⃣  Desabilitar Histórico de Atividades e Rastreamento    │" -ForegroundColor White
-    Write-Host "│  5️⃣  Desabilitar Cortana                                    │" -ForegroundColor White
-    Write-Host "│  8️⃣  Desabilitar Acesso de Apps em Segundo Plano           │" -ForegroundColor White
-    Write-Host "└──────────────────────────────────────────────────────────────┘" -ForegroundColor Green
+    # Secao de Privacidade e Telemetria
+    Write-Host "--- PRIVACIDADE & SEGURANCA -----------------------------------" -ForegroundColor Green
+    Write-Host "  1   Desabilitar Telemetria                                  " -ForegroundColor White
+    Write-Host "  2   Desabilitar Historico de Atividades e Rastreamento     " -ForegroundColor White
+    Write-Host "  5   Desabilitar Cortana                                     " -ForegroundColor White
+    Write-Host "  8   Desabilitar Acesso de Apps em Segundo Plano            " -ForegroundColor White
+    Write-Host "---------------------------------------------------------------" -ForegroundColor Green
     Write-Host ""
     
-    # Seção de Limpeza do Sistema
-    Write-Host "┌─ 🧹 LIMPEZA & OTIMIZAÇÃO ────────────────────────────────────┐" -ForegroundColor Magenta
-    Write-Host "│  3️⃣  Remover Bloatware                                      │" -ForegroundColor White
-    Write-Host "│  4️⃣  Desabilitar Serviços Específicos                      │" -ForegroundColor White
-    Write-Host "│  10 Remover Microsoft Edge                                  │" -ForegroundColor White
-    Write-Host "│  12 Manutenção Completa do PC                              │" -ForegroundColor White
-    Write-Host "└──────────────────────────────────────────────────────────────┘" -ForegroundColor Magenta
+    # Secao de Limpeza do Sistema
+    Write-Host "--- LIMPEZA & OTIMIZACAO --------------------------------------" -ForegroundColor Magenta
+    Write-Host "  3   Remover Bloatware                                       " -ForegroundColor White
+    Write-Host "  4   Desabilitar Servicos Especificos                       " -ForegroundColor White
+    Write-Host "  10  Remover Microsoft Edge                                  " -ForegroundColor White
+    Write-Host "  12  Manutencao Completa do PC                              " -ForegroundColor White
+    Write-Host "---------------------------------------------------------------" -ForegroundColor Magenta
     Write-Host ""
     
-    # Seção de Interface
-    Write-Host "┌─ 🎨 INTERFACE & APARÊNCIA ───────────────────────────────────┐" -ForegroundColor Blue
-    Write-Host "│  6️⃣  Desabilitar Bing no Menu Iniciar                      │" -ForegroundColor White
-    Write-Host "│  9️⃣  Ocultar Barra de Pesquisa                             │" -ForegroundColor White
-    Write-Host "└──────────────────────────────────────────────────────────────┘" -ForegroundColor Blue
+    # Secao de Interface
+    Write-Host "--- INTERFACE & APARENCIA -------------------------------------" -ForegroundColor Blue
+    Write-Host "  6   Desabilitar Bing no Menu Iniciar                       " -ForegroundColor White
+    Write-Host "  9   Ocultar Barra de Pesquisa                              " -ForegroundColor White
+    Write-Host "---------------------------------------------------------------" -ForegroundColor Blue
     Write-Host ""
     
-    # Seção de Ferramentas
-    Write-Host "┌─ 🛠️  FERRAMENTAS & INSTALAÇÃO ───────────────────────────────┐" -ForegroundColor Yellow
-    Write-Host "│  7️⃣  Aplicar Todas as Configurações (Conclusão)            │" -ForegroundColor White
-    Write-Host "│  11 Instalar Programas Essenciais                          │" -ForegroundColor White
-    Write-Host "└──────────────────────────────────────────────────────────────┘" -ForegroundColor Yellow
+    # Secao de Ferramentas
+    Write-Host "--- FERRAMENTAS & INSTALACAO ----------------------------------" -ForegroundColor Yellow
+    Write-Host "  7   Aplicar Todas as Configuracoes (Conclusao)             " -ForegroundColor White
+    Write-Host "  11  Instalar Programas Essenciais                          " -ForegroundColor White
+    Write-Host "---------------------------------------------------------------" -ForegroundColor Yellow
     Write-Host ""
     
-    # Opção de saída
-    Write-Host "┌─ ❌ SAIR ────────────────────────────────────────────────────┐" -ForegroundColor Red
-    Write-Host "│  0️⃣  Sair do Script                                         │" -ForegroundColor White
-    Write-Host "└──────────────────────────────────────────────────────────────┘" -ForegroundColor Red
+    # Opcao de saida
+    Write-Host "--- SAIR ------------------------------------------------------" -ForegroundColor Red
+    Write-Host "  0   Sair do Script                                          " -ForegroundColor White
+    Write-Host "---------------------------------------------------------------" -ForegroundColor Red
     Write-Host ""
     
-    # Prompt de entrada com estilo
-    Write-Host "┌──────────────────────────────────────────────────────────────┐" -ForegroundColor DarkGray
-    Write-Host "│" -ForegroundColor DarkGray -NoNewline
-    Write-Host " 💡 Digite o número da opção desejada: " -ForegroundColor Cyan -NoNewline
+    # Prompt de entrada simples
+    Write-Host "---------------------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "Digite o numero da opcao desejada: " -ForegroundColor Cyan -NoNewline
     $choice = Read-Host
-    Write-Host "└──────────────────────────────────────────────────────────────┘" -ForegroundColor DarkGray
+    Write-Host "---------------------------------------------------------------" -ForegroundColor DarkGray
     
     switch ($choice) {
         "1" { 
-            Write-Host "`n🔒 Desabilitando Telemetria..." -ForegroundColor Yellow
+            Write-Host "`nDesabilitando Telemetria..." -ForegroundColor Yellow
             Disable-Telemetry 
         }
         "2" { 
-            Write-Host "`n🔒 Desabilitando Histórico de Atividades..." -ForegroundColor Yellow
+            Write-Host "`nDesabilitando Historico de Atividades..." -ForegroundColor Yellow
             Disable-PrivacySettings 
         }
         "3" { 
-            Write-Host "`n🧹 Removendo Bloatware..." -ForegroundColor Yellow
+            Write-Host "`nRemovendo Bloatware..." -ForegroundColor Yellow
             Remove-Bloatware 
         }
         "4" { 
-            Write-Host "`n🛠️ Desabilitando Serviços..." -ForegroundColor Yellow
+            Write-Host "`nDesabilitando Servicos..." -ForegroundColor Yellow
             Disable-Services 
         }
         "5" { 
-            Write-Host "`n🔇 Desabilitando Cortana..." -ForegroundColor Yellow
+            Write-Host "`nDesabilitando Cortana..." -ForegroundColor Yellow
             Disable-Cortana 
         }
         "6" { 
-            Write-Host "`n🎨 Desabilitando Bing no Menu Iniciar..." -ForegroundColor Yellow
+            Write-Host "`nDesabilitando Bing no Menu Iniciar..." -ForegroundColor Yellow
             Disable-BingSearchInStartMenu 
         }
         "7" { 
-            Write-Host "`n✅ Aplicando Todas as Configurações..." -ForegroundColor Yellow
+            Write-Host "`nAplicando Todas as Configuracoes..." -ForegroundColor Yellow
             Update-Tweaks 
         }
         "8" { 
-            Write-Host "`n🔒 Desabilitando Apps em Segundo Plano..." -ForegroundColor Yellow
+            Write-Host "`nDesabilitando Apps em Segundo Plano..." -ForegroundColor Yellow
             Disable-BackgroundAppAccess 
         }
         "9" { 
-            Write-Host "`n🎨 Ocultando Barra de Pesquisa..." -ForegroundColor Yellow
+            Write-Host "`nOcultando Barra de Pesquisa..." -ForegroundColor Yellow
             Hide-Search 
         }
         "10" { 
-            Write-Host "`n🧹 Removendo Microsoft Edge..." -ForegroundColor Yellow
+            Write-Host "`nRemovendo Microsoft Edge..." -ForegroundColor Yellow
             Remove-Edge 
         }
         "11" { 
-            Write-Host "`n📦 Instalando Programas..." -ForegroundColor Yellow
+            Write-Host "`nInstalando Programas..." -ForegroundColor Yellow
             Install-Programs 
         }   
         "12" { 
-            Write-Host "`n🛠️ Iniciando Manutenção do PC..." -ForegroundColor Yellow
+            Write-Host "`nIniciando Manutencao do PC..." -ForegroundColor Yellow
             Show-MaintenanceMenu 
         } 
         "0" { 
-            Write-Host "`n👋 Saindo do script... Obrigado por usar!" -ForegroundColor Green
+            Write-Host "`nSaindo do script... Obrigado por usar!" -ForegroundColor Green
             break 
         }
         default { 
-            Write-Host "`n❌ Opção inválida! Por favor, escolha um número válido." -ForegroundColor Red
+            Write-Host "`nOpcao invalida! Por favor, escolha um numero valido." -ForegroundColor Red
             Start-Sleep -Seconds 2
         }
     }
     
     if ($choice -ne "0") {
         Write-Host "`n" -NoNewline
-        Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor DarkGray
-        Write-Host "✅ Operação concluída! " -ForegroundColor Green -NoNewline
+        Write-Host "===============================================================" -ForegroundColor DarkGray
+        Write-Host "Operacao concluida! " -ForegroundColor Green -NoNewline
         Write-Host "Pressione Enter para voltar ao menu..." -ForegroundColor Cyan
-        Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor DarkGray
+        Write-Host "===============================================================" -ForegroundColor DarkGray
         Read-Host
     }
+    
+} while ($choice -ne "0")
     
 } while ($choice -ne "0")
