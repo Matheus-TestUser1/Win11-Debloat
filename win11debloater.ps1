@@ -20,28 +20,106 @@ function Error($message) {
     Write-Host "ERRO: $message" -ForegroundColor Red
 }
 
-# Function to create a system restore point
+# Função melhorada para criar ponto de restauração
 function New-RestorePoint {
-    $description = "Ponto de restauração criado por script PowerShell"
+    param(
+        [string]$Description = "Ponto de restauração criado por script PowerShell"
+    )
+    
+    # Verificar se está executando como administrador
+    if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+        Write-Error "Este script precisa ser executado como Administrador!"
+        return $false
+    }
+    
     try {
-        $restorePoint = Get-ComputerRestorePoint
-        if ($null -eq $restorePoint) {
-            Log "Criando um ponto de restauração para sua segurança..."
-            Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
-        } else {
-            Write-Host "Um ponto de restauração já existe. Deseja criar outro ponto de restauração? (S/N)"
-            $choice = Read-Host
-            if ($choice -eq "S" -or $choice -eq "s") {
-                Log "Criando um novo ponto de restauração..."
-                Checkpoint-Computer -Description $description -RestorePointType MODIFY_SETTINGS
-            } else {
-                Log "Continuando sem criar um novo ponto de restauração..."
+        # Verificar se a proteção do sistema está habilitada
+        $systemProtection = Get-WmiObject -Class Win32_SystemRestore -ErrorAction SilentlyContinue
+        if ($null -eq $systemProtection) {
+            Write-Warning "Proteção do sistema não está habilitada. Tentando habilitar..."
+            try {
+                Enable-ComputerRestore -Drive "C:\" -Confirm:$false
+                Write-Host "Proteção do sistema habilitada para a unidade C:" -ForegroundColor Green
+            } catch {
+                Write-Error "Não foi possível habilitar a proteção do sistema: $_"
+                return $false
             }
         }
+        
+        # Verificar pontos de restauração existentes
+        $existingPoints = Get-ComputerRestorePoint -ErrorAction SilentlyContinue
+        $todayPoints = $existingPoints | Where-Object { $_.CreationTime.Date -eq (Get-Date).Date }
+        
+        if ($todayPoints.Count -gt 0) {
+            Write-Host "Já existe(m) $($todayPoints.Count) ponto(s) de restauração criado(s) hoje."
+            Write-Host "Deseja criar outro ponto de restauração? (S/N): " -NoNewline
+            $choice = Read-Host
+            if ($choice -notmatch '^[SsYy]') {
+                Write-Host "Continuando sem criar um novo ponto de restauração..." -ForegroundColor Yellow
+                return $true
+            }
+        }
+        
+        # Criar o ponto de restauração
+        Write-Host "Criando ponto de restauração..." -ForegroundColor Cyan
+        Write-Host "Isso pode levar alguns minutos. Aguarde..." -ForegroundColor Yellow
+        
+        Checkpoint-Computer -Description $Description -RestorePointType MODIFY_SETTINGS -Verbose
+        
+        # Verificar se foi criado com sucesso
+        Start-Sleep -Seconds 5
+        $newPoints = Get-ComputerRestorePoint | Sort-Object CreationTime -Descending | Select-Object -First 1
+        
+        if ($newPoints -and $newPoints.CreationTime -gt (Get-Date).AddMinutes(-10)) {
+            Write-Host "Ponto de restauração criado com sucesso!" -ForegroundColor Green
+            Write-Host "Data/Hora: $($newPoints.CreationTime)" -ForegroundColor Green
+            Write-Host "Descrição: $($newPoints.Description)" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Warning "Não foi possível verificar se o ponto de restauração foi criado."
+            return $false
+        }
+        
     } catch {
-        Error "Erro ao criar o ponto de restauração: $_"
+        Write-Error "Erro ao criar o ponto de restauração: $($_.Exception.Message)"
+        
+        # Diagnósticos adicionais
+        Write-Host "`nInformações de diagnóstico:" -ForegroundColor Yellow
+        Write-Host "- Versão do Windows: $((Get-WmiObject Win32_OperatingSystem).Caption)"
+        Write-Host "- Espaço livre em C:: $([math]::Round((Get-WmiObject Win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace/1GB, 2)) GB"
+        
+        return $false
     }
 }
+
+# Função auxiliar para verificar configurações
+function Test-RestorePointConfiguration {
+    Write-Host "Verificando configurações do sistema..." -ForegroundColor Cyan
+    
+    # Verificar se é administrador
+    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+    Write-Host "Executando como Administrador: $isAdmin" -ForegroundColor $(if($isAdmin){"Green"}else{"Red"})
+    
+    # Verificar proteção do sistema
+    try {
+        $protection = Get-ComputerRestorePoint -ErrorAction SilentlyContinue
+        Write-Host "Proteção do sistema ativa: $($null -ne $protection)" -ForegroundColor $(if($null -ne $protection){"Green"}else{"Red"})
+    } catch {
+        Write-Host "Proteção do sistema ativa: Erro ao verificar" -ForegroundColor Red
+    }
+    
+    # Verificar espaço em disco
+    $freeSpace = [math]::Round((Get-WmiObject Win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace/1GB, 2)
+    Write-Host "Espaço livre em C:: $freeSpace GB" -ForegroundColor $(if($freeSpace -gt 2){"Green"}else{"Yellow"})
+    
+    # Verificar política de execução
+    $executionPolicy = Get-ExecutionPolicy
+    Write-Host "Política de execução: $executionPolicy" -ForegroundColor $(if($executionPolicy -ne "Restricted"){"Green"}else{"Yellow"})
+}
+
+# Exemplo de uso:
+# Test-RestorePointConfiguration
+# New-RestorePoint -Description "Backup antes de mudanças importantes"
 
 # Function to disable telemetry
 function Disable-Telemetry {
