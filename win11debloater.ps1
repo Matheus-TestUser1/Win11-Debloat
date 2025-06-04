@@ -1,4 +1,4 @@
-# Ensure the script is running as an Administrator
+ # Ensure the script is running as an Administrator
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
     [System.Windows.Forms.MessageBox]::Show(
         "Você não está executando este script como administrador! Execute-o como administrador para continuar.", 
@@ -998,4 +998,4 @@ do {
     
 } while ($choice -ne "0")
     
-} while ($choice -ne "0")
+
