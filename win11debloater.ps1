@@ -465,34 +465,22 @@ function Update-Tweaks {
     Log "Tweaks are done!"
 }
 
-# Function to remove Microsoft Edge
-# Função melhorada para remover Microsoft Edge
+# Optimized function to remove Microsoft Edge while preserving WebView2
 function Remove-Edge {
-    param(
-        [switch]$Force,
-        [switch]$KeepWebView2
-    )
-    
-    # Verificar se está executando como administrador
-    if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-Error "Este script precisa ser executado como Administrador!"
-        return $false
-    }
-    
-    Write-Host "Iniciando remoção do Microsoft Edge..." -ForegroundColor Cyan
-    $errorOccurred = $false
+    # Always preserve WebView2 - no optional parameter needed
+    Log "Iniciando remoção do Microsoft Edge (preservando WebView2)..."
     
     try {
-        # 1. Parar processos do Edge
-        Write-Host "Encerrando processos do Microsoft Edge..." -ForegroundColor Yellow
-        $edgeProcesses = @("msedge", "msedgewebview2", "MicrosoftEdgeUpdate")
+        # Stop Edge processes (but not WebView2 processes)
+        Log "Encerrando processos do Microsoft Edge..."
+        $edgeProcesses = @("msedge", "MicrosoftEdgeUpdate")
         foreach ($process in $edgeProcesses) {
             Get-Process -Name $process -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
         }
-        Start-Sleep -Seconds 3
+        Start-Sleep -Seconds 2
         
-        # 2. Desabilitar serviços relacionados ao Edge
-        Write-Host "Desabilitando serviços do Microsoft Edge..." -ForegroundColor Yellow
+        # Disable Edge services
+        Log "Desabilitando serviços do Microsoft Edge..."
         $edgeServices = @("edgeupdate", "edgeupdatem", "MicrosoftEdgeElevationService")
         foreach ($service in $edgeServices) {
             $svc = Get-Service -Name $service -ErrorAction SilentlyContinue
@@ -500,100 +488,64 @@ function Remove-Edge {
                 try {
                     Stop-Service -Name $service -Force -ErrorAction SilentlyContinue
                     Set-Service -Name $service -StartupType Disabled -ErrorAction Stop
-                    Write-Host "Serviço $service desabilitado." -ForegroundColor Green
+                    Log "Serviço $service desabilitado"
                 } catch {
-                    Write-Warning "Falha ao desabilitar serviço $service`: $_"
-                    $errorOccurred = $true
+                    Error "Falha ao desabilitar serviço $service`: $_"
                 }
             }
         }
         
-        # 3. Remover Edge Legacy (UWP) - Windows 10 versões antigas
-        Write-Host "Removendo Microsoft Edge Legacy..." -ForegroundColor Yellow
+        # Remove Edge Legacy (UWP) packages
+        Log "Removendo Microsoft Edge Legacy..."
         $edgeLegacyPackages = Get-AppxPackage -Name "*Microsoft.MicrosoftEdge*" -AllUsers -ErrorAction SilentlyContinue
-        if ($edgeLegacyPackages) {
-            foreach ($package in $edgeLegacyPackages) {
-                try {
-                    Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
-                    Write-Host "Edge Legacy removido: $($package.Name)" -ForegroundColor Green
-                } catch {
-                    Write-Warning "Falha ao remover Edge Legacy: $_"
-                    $errorOccurred = $true
-                }
+        foreach ($package in $edgeLegacyPackages) {
+            try {
+                Remove-AppxPackage -Package $package.PackageFullName -AllUsers -ErrorAction Stop
+                Log "Edge Legacy removido: $($package.Name)"
+            } catch {
+                Error "Falha ao remover Edge Legacy: $_"
             }
         }
         
-        # Remover provisioned packages
+        # Remove provisioned packages
         $provisionedPackages = Get-AppxProvisionedPackage -Online | Where-Object DisplayName -like "*Microsoft.MicrosoftEdge*"
-        if ($provisionedPackages) {
-            foreach ($package in $provisionedPackages) {
-                try {
-                    Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop
-                    Write-Host "Provisioned package removido: $($package.DisplayName)" -ForegroundColor Green
-                } catch {
-                    Write-Warning "Falha ao remover provisioned package: $_"
-                }
+        foreach ($package in $provisionedPackages) {
+            try {
+                Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop
+                Log "Provisioned package removido: $($package.DisplayName)"
+            } catch {
+                Error "Falha ao remover provisioned package: $_"
             }
         }
         
-        # 4. Remover Edge Chromium moderno
-        Write-Host "Removendo Microsoft Edge Chromium..." -ForegroundColor Yellow
-        
-        # Procurar instalações do Edge Chromium
+        # Remove Edge Chromium using uninstaller
+        Log "Removendo Microsoft Edge Chromium..."
         $edgePaths = @(
             "${env:ProgramFiles(x86)}\Microsoft\Edge\Application",
-            "${env:ProgramFiles}\Microsoft\Edge\Application",
-            "${env:LOCALAPPDATA}\Microsoft\Edge\Application"
+            "${env:ProgramFiles}\Microsoft\Edge\Application"
         )
         
         foreach ($path in $edgePaths) {
             if (Test-Path $path) {
-                # Procurar pelo setup.exe para desinstalação
                 $setupPath = Get-ChildItem -Path $path -Recurse -Name "setup.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
                 if ($setupPath) {
                     $fullSetupPath = Join-Path $path $setupPath
-                    Write-Host "Executando desinstalador do Edge: $fullSetupPath" -ForegroundColor Yellow
                     try {
-                        # Tentar desinstalação silenciosa
                         $process = Start-Process -FilePath $fullSetupPath -ArgumentList "--uninstall", "--force-uninstall", "--system-level" -Wait -PassThru -WindowStyle Hidden
                         if ($process.ExitCode -eq 0) {
-                            Write-Host "Edge Chromium removido com sucesso!" -ForegroundColor Green
+                            Log "Edge Chromium removido com sucesso"
                         } else {
-                            Write-Warning "Desinstalador retornou código de erro: $($process.ExitCode)"
-                            $errorOccurred = $true
+                            Error "Desinstalador retornou código de erro: $($process.ExitCode)"
                         }
                     } catch {
-                        Write-Warning "Falha ao executar desinstalador: $_"
-                        $errorOccurred = $true
+                        Error "Falha ao executar desinstalador: $_"
                     }
                 }
             }
         }
         
-        # 5. Limpeza manual de arquivos (se necessário)
-        if ($Force) {
-            Write-Host "Executando limpeza forçada de arquivos..." -ForegroundColor Red
-            $cleanupPaths = @(
-                "${env:ProgramFiles(x86)}\Microsoft\Edge",
-                "${env:ProgramFiles}\Microsoft\Edge",
-                "${env:LOCALAPPDATA}\Microsoft\Edge",
-                "${env:APPDATA}\Microsoft\Edge"
-            )
-            
-            foreach ($path in $cleanupPaths) {
-                if (Test-Path $path) {
-                    try {
-                        Remove-Item -Path $path -Recurse -Force -ErrorAction Stop
-                        Write-Host "Removido: $path" -ForegroundColor Green
-                    } catch {
-                        Write-Warning "Não foi possível remover: $path - $_"
-                    }
-                }
-            }
-        }
-        
-        # 6. Remover atalhos
-        Write-Host "Removendo atalhos do Microsoft Edge..." -ForegroundColor Yellow
+        # Remove shortcuts
+        Log "Removendo atalhos do Microsoft Edge..."
         $shortcutPaths = @(
             "${env:PUBLIC}\Desktop\Microsoft Edge.lnk",
             "${env:APPDATA}\Microsoft\Windows\Start Menu\Programs\Microsoft Edge.lnk",
@@ -604,15 +556,15 @@ function Remove-Edge {
             if (Test-Path $shortcut) {
                 try {
                     Remove-Item -Path $shortcut -Force -ErrorAction Stop
-                    Write-Host "Atalho removido: $shortcut" -ForegroundColor Green
+                    Log "Atalho removido: $shortcut"
                 } catch {
-                    Write-Warning "Falha ao remover atalho: $_"
+                    Error "Falha ao remover atalho: $_"
                 }
             }
         }
         
-        # 7. Limpeza do registro (cuidadosamente)
-        Write-Host "Limpando entradas do registro..." -ForegroundColor Yellow
+        # Clean registry entries
+        Log "Limpando entradas do registro..."
         $registryPaths = @(
             "HKLM:\SOFTWARE\Microsoft\Edge",
             "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Edge",
@@ -623,71 +575,41 @@ function Remove-Edge {
             if (Test-Path $regPath) {
                 try {
                     Remove-Item -Path $regPath -Recurse -Force -ErrorAction Stop
-                    Write-Host "Entrada do registro removida: $regPath" -ForegroundColor Green
+                    Log "Entrada do registro removida: $regPath"
                 } catch {
-                    Write-Warning "Falha ao remover entrada do registro: $_"
+                    Error "Falha ao remover entrada do registro: $_"
                 }
             }
         }
         
-        # 8. Verificar se o WebView2 deve ser mantido
-        if (-not $KeepWebView2) {
-            Write-Host "Removendo Microsoft Edge WebView2..." -ForegroundColor Yellow
-            $webview2Path = "${env:ProgramFiles(x86)}\Microsoft\EdgeWebView\Application"
-            if (Test-Path $webview2Path) {
-                try {
-                    Remove-Item -Path $webview2Path -Recurse -Force -ErrorAction Stop
-                    Write-Host "WebView2 removido." -ForegroundColor Green
-                } catch {
-                    Write-Warning "Falha ao remover WebView2: $_"
-                }
-            }
-        }
+        # WebView2 is ALWAYS preserved - no removal code here
+        Log "WebView2 preservado (necessário para aplicações)"
         
-        # Verificação final
-        Write-Host "`nVerificando remoção..." -ForegroundColor Cyan
-        $edgeStillExists = $false
-        
-        # Verificar processos
-        $runningEdge = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
-        if ($runningEdge) {
-            Write-Warning "Edge ainda está em execução."
-            $edgeStillExists = $true
-        }
-        
-        # Verificar arquivos
-        foreach ($path in $edgePaths) {
-            if (Test-Path $path) {
-                Write-Warning "Arquivos do Edge ainda existem em: $path"
-                $edgeStillExists = $true
-            }
-        }
-        
-        if (-not $edgeStillExists -and -not $errorOccurred) {
-            Write-Host "`nMicrosoft Edge foi removido com sucesso!" -ForegroundColor Green
-            Write-Host "Recomenda-se reiniciar o computador para completar a remoção." -ForegroundColor Yellow
+        # Final verification
+        Log "Verificando remoção..."
+        $edgeStillRunning = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
+        if (-not $edgeStillRunning) {
+            Log "Microsoft Edge foi removido com sucesso!"
+            Log "Recomenda-se reiniciar o computador para completar a remoção"
             return $true
         } else {
-            Write-Warning "`nA remoção pode não ter sido completamente bem-sucedida."
-            if ($edgeStillExists) {
-                Write-Host "Considere usar o parâmetro -Force para limpeza mais agressiva." -ForegroundColor Yellow
-            }
+            Error "Edge ainda está em execução"
             return $false
         }
         
     } catch {
-        Write-Error "Erro geral durante a remoção do Edge: $_"
+        Error "Erro durante a remoção do Edge: $_"
         return $false
     }
 }
 
 # Função auxiliar para verificar o status do Edge
 function Get-EdgeStatus {
-    Write-Host "Verificando status do Microsoft Edge..." -ForegroundColor Cyan
+    Log "Verificando status do Microsoft Edge..."
     
     # Verificar processos em execução
     $edgeProcesses = Get-Process -Name "msedge" -ErrorAction SilentlyContinue
-    Write-Host "Processos do Edge em execução: $($edgeProcesses.Count)" -ForegroundColor $(if($edgeProcesses.Count -eq 0){"Green"}else{"Red"})
+    Log "Processos do Edge em execução: $($edgeProcesses.Count)"
     
     # Verificar serviços
     $edgeServices = @("edgeupdate", "edgeupdatem", "MicrosoftEdgeElevationService")
@@ -698,7 +620,7 @@ function Get-EdgeStatus {
             $activeServices++
         }
     }
-    Write-Host "Serviços ativos do Edge: $activeServices" -ForegroundColor $(if($activeServices -eq 0){"Green"}else{"Red"})
+    Log "Serviços ativos do Edge: $activeServices"
     
     # Verificar instalações
     $edgePaths = @(
@@ -710,20 +632,18 @@ function Get-EdgeStatus {
     foreach ($path in $edgePaths) {
         if (Test-Path $path) {
             $installationsFound++
-            Write-Host "Instalação encontrada em: $path" -ForegroundColor Red
+            Log "Instalação encontrada em: $path"
         }
     }
     
     if ($installationsFound -eq 0) {
-        Write-Host "Nenhuma instalação do Edge encontrada." -ForegroundColor Green
+        Log "Nenhuma instalação do Edge encontrada"
     }
 }
 
-# Exemplos de uso:
+# Exemplo de uso:
 # Get-EdgeStatus
 # Remove-Edge
-# Remove-Edge -Force
-# Remove-Edge -Force -KeepWebView2
 
 # Function to install programs using Chocolatey
 function Install-Programs {
