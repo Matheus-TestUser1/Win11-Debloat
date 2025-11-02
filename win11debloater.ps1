@@ -821,6 +821,4 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit 1
 }
 
-# Criar ponto de restauração inicial
-New-RestorePoint
-Show-MainMenu
+
