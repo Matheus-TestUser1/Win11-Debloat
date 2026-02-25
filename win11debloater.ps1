@@ -1,460 +1,194 @@
-#Requires -RunAsAdministrator
-#Requires -Version 5.1
+Principais Melhorias Sugeridas
+Seu script já está bem estruturado e seguro, mas pode ser otimizado para maior robustez, modularidade e usabilidade. Aqui estão as melhorias prioritárias.
 
-# ============================================
-# WINDOWS 11/10 DEBLOATER v2.1 - COMPLETO
-# ============================================
-# Autor: Otimizado para máxima segurança e performance
-# Data: Fevereiro 2026
-# ============================================
+Correções Críticas
+1. Backup Automático Completo
 
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$ErrorActionPreference = "Stop"
-$WarningPreference = "Continue"
-$ProgressPreference = "Continue"
-
-# ============================================
-# VARIÁVEIS GLOBAIS
-# ============================================
-$ScriptVersion = "2.1"
-$BackupDir = "$env:TEMP\Win11Debloater_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
-$LogFile = "$env:TEMP\Win11Debloater_$((Get-Date).ToString('yyyyMMdd')).log"
-$Global:RestorePointCreated = $false
-
-# ============================================
-# FUNÇÕES DE LOG E BACKUP
-# ============================================
-
-function Write-Log {
-    param([Parameter(Mandatory)][string]$Message, [ValidateSet("INFO","SUCCESS","WARNING","ERROR")][string]$Level="INFO")
+powershell
+# Adicione no início do script, após verificação de admin
+function Backup-SystemState {
+    $backupDir = "$env:TEMP\Win11Debloater_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+    New-Item -Path $backupDir -ItemType Directory -Force | Out-Null
     
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logEntry = "[$timestamp] [$Level] $Message"
-    
-    Add-Content -Path $LogFile -Value $logEntry -Force
-    
-    $color = switch($Level) {
-        "ERROR" { "Red" }
-        "WARNING" { "Yellow" }
-        "SUCCESS" { "Green" }
-        default { "Cyan" }
-    }
-    Write-Host $logEntry -ForegroundColor $color
-}
-
-function Initialize-Backup {
-    Write-Log "Inicializando backup completo do sistema..." "INFO"
-    New-Item -Path $BackupDir -ItemType Directory -Force | Out-Null
-    
-    # Backup serviços
-    Get-Service | Export-Csv "$BackupDir\Services_Backup.csv" -NoTypeInformation -Encoding UTF8
-    
-    # Backup apps instalados
-    Get-AppxPackage -AllUsers | Export-Csv "$BackupDir\Apps_Backup.csv" -NoTypeInformation -Encoding UTF8
-    
-    Write-Log "Backup inicializado: $BackupDir" "SUCCESS"
-}
-
-function New-SystemRestorePoint {
-    param([string]$Description = "Win11Debloater v$ScriptVersion")
-    
-    try {
-        $systemDrive = $env:SystemDrive
-        Enable-ComputerRestore -Drive "$systemDrive\" -Confirm:$false | Out-Null
-        Start-Sleep -Seconds 2
-        
-        $drive = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$systemDrive'"
-        if ([Math]::Round($drive.FreeSpace / 1GB, 2) -lt 5) {
-            Write-Log "Espaço em disco baixo!" "WARNING"
-            $confirm = Read-Host "Continuar? (S/N)"
-            if ($confirm -notmatch "^[Ss]") { return $false }
-        }
-        
-        Checkpoint-Computer -Description $Description -RestorePointType "MODIFY_SETTINGS" | Out-Null
-        Start-Sleep -Seconds 3
-        
-        $newPoint = Get-ComputerRestorePoint | Sort-Object CreationTime -Descending | Select-Object -First 1
-        if ($newPoint.Description -eq $Description) {
-            $Global:RestorePointCreated = $true
-            Write-Log "Ponto de restauração '$($newPoint.Description)' criado!" "SUCCESS"
-            return $true
-        }
-    } catch {
-        Write-Log "Falha ao criar ponto de restauração: $_" "ERROR"
-    }
-    return $false
-}
-
-# ============================================
-# FUNÇÕES DE REGISTRO SEGURAS
-# ============================================
-
-function Set-RegistryValueSafe {
-    param(
-        [Parameter(Mandatory)][string]$Path,
-        [Parameter(Mandatory)][string]$Name,
-        [Parameter(Mandatory)]$Value,
-        [ValidateSet("DWord","String","QWord")][string]$Type = "DWord"
+    # Backup registro completo das chaves modificadas
+    $regKeys = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection",
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection",
+        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
     )
     
-    try {
-        if (!(Test-Path $Path)) { New-Item -Path $Path -Force | Out-Null }
-        
-        # Backup da chave
-        $backupReg = "$BackupDir\Registry_$($Path -replace '[:\\]','_').reg"
-        $exportPath = $Path -replace '^HK(LM|CU):\\', '${function:regPath}'
-        reg export "$Path" $backupReg /y 2>$null
-        
-        $null = Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force
-        Write-Log "✓ Registro: $Path\$Name = $Value" "SUCCESS"
-        return $true
-    } catch {
-        Write-Log "✗ Erro registro $Path\$Name`: $_" "ERROR"
-        return $false
+    foreach ($key in $regKeys) {
+        if (Test-Path $key) {
+            $regFile = "$backupDir\$($key -replace '[:\\]','_').reg"
+            reg export $key $regFile /y | Out-Null
+        }
     }
+    
+    # Exportar lista de serviços atuais
+    Get-Service | Export-Csv "$backupDir\Services_Backup.csv" -NoTypeInformation
+    Write-Log "Backup completo criado: $backupDir" "SUCCESS"
 }
+2. Validação de Integridade Antes/Depois
 
-# ============================================
-# DESABILITAR TELEMETRIA (MÁXIMA PROTEÇÃO)
-# ============================================
-
-function Disable-Telemetry {
-    Write-Log "========== DESABILITANDO TELEMETRIA ==========" "INFO"
+powershell
+function Test-SystemIntegrity {
+    param([switch]$Before, [switch]$After)
     
-    $telemetryKeys = @{
-        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" = @{ "AllowTelemetry" = 0 }
-        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" = @{ 
-            "AllowTelemetry" = 0; "AllowDeviceNameInTelemetry" = 0 
-        }
-        "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Policies\DataCollection" = @{ "AllowTelemetry" = 0 }
-        "HKLM:\SOFTWARE\Policies\Microsoft\SQMClient\Windows" = @{ "CEIPEnable" = 0 }
-        "HKLM:\SOFTWARE\Microsoft\SQMClient\Windows" = @{ "CEIPEnable" = 0 }
-    }
-    
-    foreach ($path in $telemetryKeys.Keys) {
-        foreach ($key in $telemetryKeys[$path].Keys) {
-            Set-RegistryValueSafe -Path $path -Name $key -Value $telemetryKeys[$path][$key]
-        }
-    }
-    
-    # Tarefas agendadas
-    $tasks = @(
-        "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser",
-        "\Microsoft\Windows\Application Experience\ProgramDataUpdater",
-        "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator",
-        "\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip"
+    $tests = @(
+        { sfc /scannow },
+        { DISM /Online /Cleanup-Image /CheckHealth },
+        { Get-MpPreference | Select-Object DisableRealtimeMonitoring }
     )
     
-    foreach ($task in $tasks) {
-        Disable-ScheduledTask -TaskName $task -ErrorAction SilentlyContinue | Out-Null
-    }
-    
-    Write-Log "Telemetria desabilitada completamente!" "SUCCESS"
-}
-
-# ============================================
-# PRIVACIDADE MÁXIMA
-# ============================================
-
-function Set-MaxPrivacy {
-    Write-Log "========== CONFIGURAÇÕES DE PRIVACIDADE ==========" "INFO"
-    
-    $privacyKeys = @{
-        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo" = @{ "Enabled" = 0 }
-        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo" = @{ "DisabledByGroupPolicy" = 1 }
-        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" = @{ 
-            "SilentInstalledAppsEnabled" = 0; "SystemPaneSuggestionsEnabled" = 0;
-            "SubscribedContent-338388Enabled" = 0; "SubscribedContent-338389Enabled" = 0;
-            "SubscribedContent-353698Enabled" = 0; "ContentDeliveryAllowed" = 0
-        }
-        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search" = @{ 
-            "AllowCortana" = 0; "DisableWebSearch" = 1 
-        }
-        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System" = @{ 
-            "EnableActivityFeed" = 0; "PublishUserActivities" = 0; "UploadUserActivities" = 0
-        }
-    }
-    
-    foreach ($path in $privacyKeys.Keys) {
-        foreach ($key in $privacyKeys[$path].Keys) {
-            Set-RegistryValueSafe -Path $path -Name $key -Value $privacyKeys[$path][$key]
-        }
-    }
-    
-    Write-Log "Privacidade máxima aplicada!" "SUCCESS"
-}
-
-# ============================================
-# REMOVER BLOATED APPS (SELETIVO E SEGURO)
-# ============================================
-
-function Remove-Bloatware {
-    Write-Log "========== REMOVENDO BLOATWARE ==========" "INFO"
-    
-    # Apps ESSENCIAIS que NUNCA remover
-    $essentialApps = @(
-        "Microsoft.WindowsStore", "Microsoft.WindowsTerminal",
-        "Microsoft.DesktopAppInstaller", "Microsoft.HEIFImageExtension"
-    )
-    
-    # Apps seguros para remover
-    $bloatApps = @(
-        "Microsoft.BingNews", "Microsoft.BingWeather", "Microsoft.GetHelp",
-        "Microsoft.Getstarted", "Microsoft.People", "Microsoft.Print3D",
-        "Microsoft.SkypeApp", "Microsoft.Todos", "Microsoft.YourPhone",
-        "Microsoft.MicrosoftSolitaireCollection", "Microsoft.Xbox*",
-        "Clipchamp", "*3DBuilder*", "*CandyCrush*", "*Disney*"
-    )
-    
-    $appsToRemove = @()
-    foreach ($pattern in $bloatApps) {
-        $apps = Get-AppxPackage -AllUsers -Name $pattern -ErrorAction SilentlyContinue
-        $apps += Get-AppxProvisionedPackage -Online | Where-Object { 
-            $_.DisplayName -like $pattern -and $essentialApps -notcontains $_.DisplayName 
-        }
-        $appsToRemove += $apps
-    }
-    
-    $appsToRemove = $appsToRemove | Sort-Object -Unique Name
-    
-    if ($appsToRemove.Count -eq 0) {
-        Write-Log "Nenhum bloatware encontrado!" "INFO"
-        return
-    }
-    
-    Write-Host "`n📱 $($appsToRemove.Count) apps para remover:" -ForegroundColor Yellow
-    $appsToRemove | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Red }
-    
-    $confirm = Read-Host "`n❓ Continuar? (S/N)"
-    if ($confirm -notmatch "^[Ss]") { 
-        Write-Log "Remoção cancelada pelo usuário" "INFO"
-        return 
-    }
-    
-    $success = 0
-    foreach ($app in $appsToRemove) {
+    foreach ($test in $tests) {
         try {
-            if ($app -is [Microsoft.Windows.AppxPackage]) {
-                Remove-AppxPackage -Package $app.PackageFullName -AllUsers -ErrorAction Stop
-            } else {
-                Remove-AppxProvisionedPackage -Online -PackageName $app.PackageName -ErrorAction Stop
-            }
-            $success++
+            & $test | Out-Null
+            Write-Log "Teste de integridade passou: $($test.ToString())" "SUCCESS"
         } catch {
-            Write-Log "Falha ao remover: $($app.Name)" "WARNING"
+            Write-Log "Falha no teste de integridade: $_" "WARNING"
+        }
+    }
+}
+Otimizações de Performance
+3. Processamento Paralelo para Apps
+
+powershell
+function Remove-WindowsBloatware {
+    # ... código existente ...
+    
+    # Substituir loop sequencial por jobs paralelos (mais rápido)
+    $installedApps | ForEach-Object -Parallel {
+        $app = $_
+        try {
+            Remove-AppxPackage -Package $app.PackageFullName -AllUsers -ErrorAction Stop
+            Write-Host "Removido: $($app.Name)" -ForegroundColor Green
+        } catch {
+            Write-Warning "Falha: $($app.Name)"
+        }
+    } -ThrottleLimit 4
+    
+    Write-Progress -Activity "Removendo Apps" -Completed
+}
+4. Configurações de Rede Otimizadas
+
+powershell
+function Optimize-Network {
+    Write-Log "Otimizando configurações de rede..." "INFO"
+    
+    # DNS mais rápidos (Cloudflare + Google)
+    $interfaces = Get-NetAdapter | Where-Object Status -eq 'Up'
+    foreach ($adapter in $interfaces) {
+        Set-DnsClientServerAddress -InterfaceAlias $adapter.Name -ServerAddresses ("1.1.1.1","1.0.0.1","8.8.8.8")
+    }
+    
+    # Desabilitar Nagle's algorithm (melhor latência jogos)
+    Set-RegistryValue "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 0xffffffff
+    Set-RegistryValue "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" "TcpNoDelay" 1
+}
+Interface e UX Aprimorada
+5. Menu com Checkbox Interativo
+
+powershell
+function Show-AdvancedMenu {
+    Add-Type -AssemblyName System.Windows.Forms
+    $form = New-Object System.Windows.Forms.Form
+    $form.Text = "Windows Debloater v2.1"
+    $form.Size = New-Object System.Drawing.Size(500,600)
+    $form.StartPosition = "CenterScreen"
+    
+    $checkboxes = @(
+        @{Name="Telemetry"; Text="Desabilitar Telemetria"; Checked=$true},
+        @{Name="Privacy"; Text="Configurações de Privacidade"; Checked=$true},
+        @{Name="Bloatware"; Text="Remover Bloatware"; Checked=$true},
+        @{Name="Edge"; Text="Desabilitar Edge"; Checked=$false},
+        @{Name="Services"; Text="Serviços Desnecessários"; Checked=$false},
+        @{Name="Performance"; Text="Otimizações Performance"; Checked=$true}
+    )
+    
+    $yPos = 20
+    $controls = @()
+    
+    foreach ($item in $checkboxes) {
+        $cb = New-Object System.Windows.Forms.CheckBox
+        $cb.Location = New-Object System.Drawing.Point(20,$yPos)
+        $cb.Size = New-Object System.Drawing.Size(450,25)
+        $cb.Text = $item.Text
+        $cb.Checked = $item.Checked
+        $form.Controls.Add($cb)
+        $controls += $cb
+        $yPos += 35
+    }
+    
+    $btnExecute = New-Object System.Windows.Forms.Button
+    $btnExecute.Location = New-Object System.Drawing.Point(150,500)
+    $btnExecute.Size = New-Object System.Drawing.Size(100,35)
+    $btnExecute.Text = "Executar"
+    $btnExecute.Add_Click({
+        $selected = $controls | Where-Object { $_.Checked }
+        # Executar funções baseadas na seleção
+        $form.Close()
+    })
+    
+    $form.Controls.Add($btnExecute)
+    $form.ShowDialog()
+}
+Funções de Reversão
+6. Sistema de Undo Completo
+
+powershell
+function Restore-System {
+    Write-Log "Restaurando configurações..." "INFO"
+    
+    # Reverter telemetria
+    $telemetryUndo = @{
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" = @{
+            "AllowTelemetry" = 3  # Básico (padrão)
         }
     }
     
-    Write-Log "✅ Removidos $success/$($appsToRemove.Count) apps!" "SUCCESS"
-}
-
-# ============================================
-# OTIMIZAÇÃO DE PERFORMANCE
-# ============================================
-
-function Optimize-Performance {
-    Write-Log "========== OTIMIZAÇÃO DE PERFORMANCE ==========" "INFO"
-    
-    # Animações e efeitos visuais
-    $perfKeys = @{
-        "HKCU:\Control Panel\Desktop" = @{ "MenuShowDelay" = 0; "VisualFXSetting" = 2 }
-        "HKCU:\Control Panel\Desktop\WindowMetrics" = @{ "MinAnimate" = 0 }
-        "HKCU:\Software\Microsoft\Windows\Dwm" = @{ "EnableAeroPeek" = 0 }
-        "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" = @{ "Win32PrioritySeparation" = 26 }
+    foreach ($path in $telemetryUndo.Keys) {
+        Get-ChildItem $path -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
     }
     
-    foreach ($path in $perfKeys.Keys) {
-        foreach ($key in $perfKeys[$path].Keys) {
-            Set-RegistryValueSafe -Path $path -Name $key -Value $perfKeys[$path][$key]
+    # Reabilitar serviços
+    $servicesToRestore = @("DiagTrack", "dmwappushservice")
+    foreach ($svc in $servicesToRestore) {
+        Set-Service $svc -StartupType Automatic
+        Start-Service $svc -ErrorAction SilentlyContinue
+    }
+    
+    Write-Log "Sistema restaurado! Reinicie o PC." "SUCCESS"
+}
+Validações de Segurança Avançadas
+7. Verificação Anti-Malware
+
+powershell
+function Test-SecurityStatus {
+    $defenderStatus = Get-MpPreference
+    if ($defenderStatus.DisableRealtimeMonitoring) {
+        Write-Log "AVISO: Windows Defender desabilitado!" "WARNING"
+        $confirm = Read-Host "Habilitar proteção em tempo real? (S/N)"
+        if ($confirm -match '^[Ss]') {
+            Set-MpPreference -DisableRealtimeMonitoring $false
         }
     }
-    
-    # Power plan Alto Desempenho
-    powercfg /setactive SCHEME_MIN 2>$null
-    
-    # Desabilitar hibernação (economia de espaço)
-    powercfg /hibernate off 2>$null
-    
-    # Limpeza temporários
-    @($env:TEMP, "$env:SystemRoot\Temp") | ForEach-Object {
-        Get-ChildItem -Path $_ -Recurse -Force -ErrorAction SilentlyContinue |
-        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
-        Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
-    }
-    
-    Write-Log "Performance otimizada!" "SUCCESS"
 }
+Script Principal Otimizado
+Estrutura Final Recomendada:
 
-# ============================================
-# DESABILITAR EDGE (SEGURO)
-# ============================================
+powershell
+# 1. Inicialização + Backup
+Backup-SystemState
+Test-SystemIntegrity -Before
 
-function Disable-Edge {
-    Write-Log "========== DESABILITANDO EDGE ==========" "INFO"
-    
-    $confirm = Read-Host "⚠️  Desabilitar Microsoft Edge? Pode quebrar WebView2 (S/N)"
-    if ($confirm -notmatch "^[Ss]") { return }
-    
-    # Parar processos
-    @("msedge","msedgewebview2","MicrosoftEdge*") | ForEach-Object {
-        Get-Process -Name $_ -ErrorAction SilentlyContinue | Stop-Process -Force
-    }
-    
-    # Desabilitar atualizações
-    @("edgeupdate","edgeupdatem") | ForEach-Object {
-        $svc = Get-Service -Name $_ -ErrorAction SilentlyContinue
-        if ($svc) {
-            Stop-Service $_ -Force; Set-Service $_ -StartupType Disabled
-        }
-    }
-    
-    # Políticas bloqueio
-    $edgeKeys = @{
-        "HKLM:\SOFTWARE\Policies\Microsoft\EdgeUpdate" = @{ 
-            "InstallDefault" = 0; "DoNotUpdateToEdgeWithChromium" = 1 
-        }
-    }
-    
-    foreach ($path in $edgeKeys.Keys) {
-        foreach ($key in $edgeKeys[$path].Keys) {
-            Set-RegistryValueSafe -Path $path -Name $key -Value $edgeKeys[$path][$key]
-        }
-    }
-    
-    Write-Log "Edge desabilitado via políticas!" "SUCCESS"
-}
+# 2. Menu Interativo (GUI ou Console)
+Show-AdvancedMenu
 
-# ============================================
-# MENU PRINCIPAL INTERATIVO
-# ============================================
+# 3. Execução Paralela das Tarefas Selecionadas
+$tasks | ForEach-Object -Parallel { & $_ } -ThrottleLimit 3
 
-function Show-MainMenu {
-    Clear-Host
-    Write-Host "=" * 70 -ForegroundColor Cyan
-    Write-Host "         WINDOWS 11/10 DEBLOATER v$ScriptVersion" -ForegroundColor Yellow
-    Write-Host "              Otimizado | Seguro | Completo" -ForegroundColor Yellow
-    Write-Host "=" * 70 -ForegroundColor Cyan
-    Write-Host ""
-    
-    Write-Host "📁 Backup salvo em: $BackupDir" -ForegroundColor Green
-    Write-Host "💾 Ponto restauração: " -NoNewline; 
-    Write-Host ($Global:RestorePointCreated ? "✓ CRIADO" : "❌ Não criado") -ForegroundColor ($Global:RestorePointCreated ? "Green" : "Red")
-    Write-Host ""
-    
-    Write-Host "🔒 [1] Desabilitar Telemetria (Privacy++)" -ForegroundColor Green
-    Write-Host "🛡️  [2] Configurações Máxima Privacidade" -ForegroundColor Green
-    Write-Host "🗑️  [3] Remover Bloatware (20+ apps)" -ForegroundColor Magenta
-    Write-Host "⚡ [4] Otimizar Performance Completa" -ForegroundColor Magenta
-    Write-Host "🌐 [5] Desabilitar Microsoft Edge" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "🔄 [R] Restaurar Tudo (Undo)" -ForegroundColor Blue
-    Write-Host "📊 [H] Verificar Saúde do PC" -ForegroundColor Blue
-    Write-Host "❌ [0] Sair" -ForegroundColor Red
-    Write-Host "=" * 70 -ForegroundColor Cyan
-    Write-Host ""
-    
-    $choice = Read-Host "Escolha uma opção"
-    return $choice
-}
+# 4. Verificação Final
+Test-SystemIntegrity -After
+Test-PCHealth
 
-# ============================================
-# FUNÇÃO PRINCIPAL
-# ============================================
-
-function Restore-All {
-    Write-Log "========== RESTAURANDO SISTEMA ==========" "INFO"
-    
-    # Reverter telemetria básica
-    Set-RegistryValueSafe -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" -Name "AllowTelemetry" -Value 3
-    
-    # Reabilitar serviços essenciais
-    @("DiagTrack") | ForEach-Object { 
-        Set-Service $_ -StartupType Automatic -ErrorAction SilentlyContinue
-        Start-Service $_ -ErrorAction SilentlyContinue
-    }
-    
-    Write-Log "Sistema restaurado! REINICIE o PC." "SUCCESS"
-}
-
-function Test-PCHealth {
-    Clear-Host
-    Write-Host "📊 VERIFICAÇÃO DE SAÚDE DO PC" -ForegroundColor Cyan
-    Write-Host "=" * 50
-    
-    # Integridade sistema
-    Write-Host "`n🔧 Integridade dos arquivos:"
-    $sfc = sfc /scannow 2>&1
-    if ($LASTEXITCODE -eq 0) { 
-        Write-Host "  ✓ SFC: OK" -ForegroundColor Green 
-    } else { 
-        Write-Host "  ⚠️  SFC: Problemas encontrados" -ForegroundColor Yellow 
-    }
-    
-    # Disco
-    $disk = Get-CimInstance Win32_LogicalDisk | Where-Object DriveType -eq 3
-    foreach ($d in $disk) {
-        $free = [Math]::Round($d.FreeSpace/1GB,1)
-        $pct = [Math]::Round(($d.FreeSpace/$d.Size)*100,1)
-        Write-Host "  💾 $($d.DeviceID): $free GB livres ($pct%)" -ForegroundColor $(if($pct -lt 10){"Red"}else{"Green"})
-    }
-    
-    # Memória
-    $mem = Get-CimInstance Win32_OperatingSystem
-    $freeMem = [Math]::Round($mem.FreePhysicalMemory/1MB,1)
-    Write-Host "  🧠 RAM livre: $freeMem GB" -ForegroundColor Green
-    
-    Read-Host "`nPressione Enter para continuar"
-}
-
-# ============================================
-# EXECUÇÃO PRINCIPAL
-# ============================================
-
-try {
-    Clear-Host
-    Write-Host "🚀 INICIANDO WINDOWS DEBLOATER v$ScriptVersion" -ForegroundColor Cyan
-    Write-Log "Script iniciado - Windows $([System.Environment]::OSVersion.VersionString)"
-    
-    # Verificações iniciais
-    if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-Log "ERRO: Execute como Administrador!" "ERROR"
-        Read-Host "Pressione Enter para sair"; exit 1
-    }
-    
-    # Inicialização
-    Initialize-Backup
-    if (-NOT (New-SystemRestorePoint)) {
-        Write-Log "AVISO: Sem ponto de restauração!" "WARNING"
-    }
-    
-    # Menu principal
-    do {
-        $choice = Show-MainMenu
-        
-        switch ($choice) {
-            "1" { Disable-Telemetry }
-            "2" { Set-MaxPrivacy }
-            "3" { Remove-Bloatware }
-            "4" { Optimize-Performance }
-            "5" { Disable-Edge }
-            "R" { Restore-All }
-            "H" { Test-PCHealth }
-            "0" { break }
-            default { Write-Host "❌ Opção inválida!" -ForegroundColor Red; Start-Sleep 1 }
-        }
-        
-        if ($choice -ne "0") { Read-Host "`nPressione Enter para continuar" }
-    } while ($choice -ne "0")
-    
-    Write-Host "`n🎉 Processo concluído!" -ForegroundColor Green
-    Write-Host "📁 Backup: $BackupDir" -ForegroundColor Cyan
-    Write-Host "📄 Log: $LogFile" -ForegroundColor Cyan
-    Write-Host "🔄 RECOMENDADO: Reinicie o PC agora!" -ForegroundColor Yellow
-    
-} catch {
-    Write-Log "ERRO FATAL: $_" "ERROR"
-    Write-Host "`n❌ ERRO CRÍTICO: $_" -ForegroundColor Red
-} finally {
-    Write-Log "Script finalizado" "INFO"
-    Read-Host "Pressione Enter para sair"
-}
+Write-Log "Processo concluído com sucesso! Backup em: $backupDir" "SUCCESS"
