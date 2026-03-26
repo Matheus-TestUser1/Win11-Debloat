@@ -1,5 +1,4 @@
-# Windows 11/10 Debloater Script - Versão Corrigida e Otimizada
-# Baseado no script original, com correções críticas e melhorias de segurança
+# Windows 11/10 Debloater Script - Versão 2.1 com melhorias
 # Aviso: Use por sua conta e risco. Sempre crie um ponto de restauração primeiro.
 
 #Requires -RunAsAdministrator
@@ -14,6 +13,15 @@
 $ErrorActionPreference = "Stop"
 $WarningPreference = "Continue"
 $ProgressPreference = "Continue"
+
+# Verificar execution policy (apenas aviso)
+$currentPolicy = Get-ExecutionPolicy
+if ($currentPolicy -eq "Restricted") {
+    Write-Host "AVISO: A Execution Policy atual é 'Restricted'. O script pode não funcionar." -ForegroundColor Yellow
+    Write-Host "Considere executar: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass" -ForegroundColor Yellow
+    $continue = Read-Host "Deseja continuar mesmo assim? (S/N)"
+    if ($continue -notmatch '^[Ss]') { exit }
+}
 
 # Verificar versão do Windows
 $osVersion = [System.Environment]::OSVersion.Version
@@ -44,10 +52,8 @@ function Write-Log {
     $logFile = "$env:TEMP\Win11Debloater_$(Get-Date -Format 'yyyyMMdd').log"
     $logEntry = "$timestamp [$Level] $Message"
     
-    # Escrever no arquivo de log
     Add-Content -Path $logFile -Value $logEntry -Force
     
-    # Mostrar no console com cores
     $color = switch ($Level) {
         "ERROR" { "Red" }
         "WARNING" { "Yellow" }
@@ -123,6 +129,13 @@ function New-SystemRestorePoint {
     )
     
     Write-Log "Verificando configuração de Restauração do Sistema..." "INFO"
+    
+    # Verificar se já existe um ponto de restauração recente (últimos 5 minutos)
+    $lastRestore = Get-ComputerRestorePoint | Sort-Object CreationTime -Descending | Select-Object -First 1
+    if ($lastRestore -and $lastRestore.CreationTime -gt (Get-Date).AddMinutes(-5)) {
+        Write-Log "Ponto de restauração criado recentemente (há menos de 5 minutos). Pulando criação." "INFO"
+        return $true
+    }
     
     try {
         # Verificar se o serviço de restauração está habilitado
@@ -205,7 +218,7 @@ function Disable-WindowsTelemetry {
         }
         # Windows Error Reporting
         "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting" = @{
-            "Disabled" = 0  # Deixar habilitado para diagnóstico
+            "Disabled" = 0
         }
         # Customer Experience Improvement Program
         "HKLM:\SOFTWARE\Microsoft\SQMClient\Windows" = @{
@@ -243,6 +256,43 @@ function Disable-WindowsTelemetry {
     }
     
     Write-Log "Telemetria desabilitada com sucesso!" "SUCCESS"
+}
+
+function Restore-TelemetryDefaults {
+    Write-Log "========== Restaurando configurações padrão de Telemetria ==========" "INFO"
+    Write-Host "ATENÇÃO: Esta operação irá restaurar as configurações de telemetria para os valores padrão do Windows." -ForegroundColor Yellow
+    $confirm = Read-Host "Deseja continuar? (S/N)"
+    if ($confirm -notmatch '^[Ss]') { return }
+    
+    $telemetrySettings = @{
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection" = @{
+            "AllowTelemetry" = 1
+            "MaxTelemetryAllowed" = 1
+            "AllowDeviceNameInTelemetry" = 1
+        }
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" = @{
+            "AllowTelemetry" = 1
+            "DoNotShowFeedbackNotifications" = 0
+            "AllowCommercialDataPipeline" = 1
+        }
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppCompat" = @{
+            "AITEnable" = 1
+            "DisableUAR" = 0
+            "DisableInventory" = 0
+            "DisablePCA" = 0
+        }
+        "HKLM:\SOFTWARE\Microsoft\SQMClient\Windows" = @{
+            "CEIPEnable" = 1
+        }
+    }
+    
+    foreach ($regPath in $telemetrySettings.Keys) {
+        foreach ($setting in $telemetrySettings[$regPath].GetEnumerator()) {
+            Set-RegistryValue -Path $regPath -Name $setting.Key -Value $setting.Value
+        }
+    }
+    
+    Write-Log "Configurações de telemetria restauradas." "SUCCESS"
 }
 
 function Set-PrivacySettings {
@@ -341,7 +391,7 @@ function Set-PrivacySettings {
 function Disable-WindowsServices {
     Write-Log "========== Desabilitando Serviços Desnecessários ==========" "INFO"
     
-    # Serviços seguros para desabilitar
+    # Serviços seguros para desabilitar (expansão de lista)
     $servicesToDisable = @(
         @{Name = "DiagTrack"; DisplayName = "Diagnostics Tracking Service"},
         @{Name = "dmwappushservice"; DisplayName = "WAP Push Service"},
@@ -357,14 +407,20 @@ function Disable-WindowsServices {
         @{Name = "lfsvc"; DisplayName = "Geolocation Service"},
         @{Name = "PcaSvc"; DisplayName = "Program Compatibility Assistant"},
         @{Name = "MessagingService"; DisplayName = "Messaging Service"},
-        @{Name = "diagnosticshub.standardcollector.service"; DisplayName = "Diagnostics Hub"}
+        @{Name = "diagnosticshub.standardcollector.service"; DisplayName = "Diagnostics Hub"},
+        @{Name = "WSearch"; DisplayName = "Windows Search"}  # Opcional: muitos desabilitam
     )
     
-    # Serviços problemáticos - NÃO desabilitar
+    # Serviços críticos que NÃO devem ser desabilitados
     $criticalServices = @(
         "WerSvc",    # Error Reporting essencial para diagnóstico
         "SysMain",   # Pode melhorar performance em SSDs modernos
-        "OneSyncSvc" # Pode quebrar funcionalidades do sistema
+        "OneSyncSvc",# Sincronização de dados (OneDrive, etc.)
+        "Spooler",   # Serviço de impressão
+        "WlanSvc",   # Wi-Fi
+        "DPS",       # Diagnostic Policy Service
+        "WdiServiceHost", # Diagnostic Service Host
+        "WdiSystemHost"   # Diagnostic System Host
     )
     Write-Log "Serviços críticos preservados: $($criticalServices -join ', ')" "INFO"
     
@@ -404,8 +460,33 @@ function Disable-WindowsServices {
     Write-Log "Total de serviços desabilitados: $disabledCount" "SUCCESS"
 }
 
+function Restore-ServicesDefaults {
+    Write-Log "========== Restaurando serviços para inicialização automática ==========" "INFO"
+    Write-Host "ATENÇÃO: Esta operação irá restaurar os serviços desabilitados para o tipo de inicialização original (Automático)." -ForegroundColor Yellow
+    $confirm = Read-Host "Deseja continuar? (S/N)"
+    if ($confirm -notmatch '^[Ss]') { return }
+    
+    $servicesToRestore = @(
+        "DiagTrack", "dmwappushservice", "MapsBroker", "XblAuthManager", "XblGameSave",
+        "XboxNetApiSvc", "XboxGipSvc", "RetailDemo", "RemoteRegistry", "WMPNetworkSvc",
+        "wisvc", "lfsvc", "PcaSvc", "MessagingService", "diagnosticshub.standardcollector.service"
+    )
+    
+    foreach ($svcName in $servicesToRestore) {
+        try {
+            $service = Get-Service -Name $svcName -ErrorAction Stop
+            Set-Service -Name $svcName -StartupType Automatic -ErrorAction Stop
+            Start-Service -Name $svcName -ErrorAction SilentlyContinue
+            Write-Log "Serviço restaurado: $($service.DisplayName)" "SUCCESS"
+        } catch {
+            Write-Log "Falha ao restaurar: $svcName - $_" "WARNING"
+        }
+    }
+    Write-Log "Restauração de serviços concluída." "SUCCESS"
+}
+
 function Disable-MicrosoftEdge {
-    Write-Log "========== Desabilitando Microsoft Edge (Mais Seguro que Remover) ==========" "INFO"
+    Write-Log "========== Desabilitando Microsoft Edge ==========" "INFO"
     
     Write-Host ""
     Write-Host "⚠️  AVISO: Remover o Edge pode quebrar aplicativos que dependem do WebView2." -ForegroundColor Yellow
@@ -426,7 +507,7 @@ function Disable-MicrosoftEdge {
     
     Start-Sleep -Seconds 2
     
-    # Desabilitar serviços de atualização do Edge (não o próprio Edge)
+    # Desabilitar serviços de atualização do Edge
     $edgeServices = @("edgeupdate", "edgeupdatem")
     foreach ($service in $edgeServices) {
         try {
@@ -479,35 +560,30 @@ function Disable-MicrosoftEdge {
         }
     }
     
-    Write-Log "Edge desabilitado via políticas! O navegador não será removido, mas ficará inoperante." "SUCCESS"
-    Write-Log "Para reverter, delete as chaves em HKLM:\SOFTWARE\Policies\Microsoft\Edge" "INFO"
+    Write-Log "Edge desabilitado via políticas." "SUCCESS"
 }
 
 function Remove-WindowsBloatware {
     Write-Log "========== Removendo Bloatware do Windows ==========" "INFO"
     
-    # Separar apps por categoria para melhor controle
     $appsNeverRemove = @(
-        "Microsoft.WindowsTerminal",        # Essencial para desenvolvedores
-        "Microsoft.HEIFImageExtension",     # Suporte a fotos modernas
+        "Microsoft.WindowsTerminal",
+        "Microsoft.HEIFImageExtension",
         "Microsoft.WebpImageExtension",
         "Microsoft.WebMediaExtensions",
         "Microsoft.VP9VideoExtensions",
-        "Microsoft.DesktopAppInstaller",    # Winget
+        "Microsoft.DesktopAppInstaller",
         "Microsoft.StorePurchaseApp",
-        "Microsoft.WindowsStore"            # Necessário para app store
+        "Microsoft.WindowsStore"
     )
     
     $appsToRemove = @(
-        # Comunicação e Social
         "Microsoft.People",
         "Microsoft.YourPhone",
         "Microsoft.Messaging",
         "Microsoft.GetHelp",
         "Microsoft.Getstarted",
         "Microsoft.WindowsFeedbackHub",
-        
-        # Entretenimento
         "Microsoft.BingNews",
         "Microsoft.BingWeather",
         "Microsoft.BingSports",
@@ -518,13 +594,9 @@ function Remove-WindowsBloatware {
         "Microsoft.Music.Preview",
         "Microsoft.MicrosoftSolitaireCollection",
         "Microsoft.MixedReality.Portal",
-        
-        # Produtividade (Opcional)
         "Microsoft.Office.OneNote",
         "Microsoft.MicrosoftOfficeHub",
         "Microsoft.PowerAutomateDesktop",
-        
-        # Utilitários desnecessários
         "Microsoft.WindowsAlarms",
         "Microsoft.WindowsMaps",
         "Microsoft.WindowsSoundRecorder",
@@ -538,20 +610,14 @@ function Remove-WindowsBloatware {
         "Microsoft.Print3D",
         "Microsoft.Whiteboard",
         "Microsoft.Todos",
-        
-        # Xbox (se não for gamer)
         "Microsoft.Xbox.TCUI",
         "Microsoft.XboxApp",
         "Microsoft.XboxGameOverlay",
         "Microsoft.XboxGamingOverlay",
         "Microsoft.XboxIdentityProvider",
         "Microsoft.XboxSpeechToTextOverlay",
-        
-        # Teams e comunicação corporativa
         "MicrosoftTeams",
         "Microsoft.SkypeApp",
-        
-        # Outros
         "Clipchamp",
         "Microsoft.Advertising.Xaml",
         "Microsoft.RemoteDesktop"
@@ -647,14 +713,8 @@ function Optimize-Performance {
         }
     }
     
-    # Otimizar prioridade de CPU para programas (menos agressivo)
+    # Otimizar prioridade de CPU para programas
     Set-RegistryValue -Path "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" -Name "Win32PrioritySeparation" -Value 26
-    
-    # NÃO desabilitar SysMain automaticamente - pode melhorar performance
-    $systemDrive = Get-PhysicalDisk | Where-Object { $_.DeviceID -eq 0 }
-    if ($systemDrive -and $systemDrive.MediaType -eq "SSD") {
-        Write-Log "SSD detectado - SysMain será mantido (pode melhorar performance)" "INFO"
-    }
     
     # Configurar gerenciamento de energia para alto desempenho (se disponível)
     try {
@@ -670,29 +730,6 @@ function Optimize-Performance {
         Write-Log "Hibernação desabilitada" "SUCCESS"
     } catch {
         Write-Log "Não foi possível desabilitar hibernação" "WARNING"
-    }
-    
-    # Limpar arquivos temporários com segurança
-    try {
-        Write-Log "Limpando arquivos temporários antigos..." "INFO"
-        
-        # Limpar TEMP do usuário
-        $tempPath = $env:TEMP
-        Get-ChildItem -Path $tempPath -Force -ErrorAction SilentlyContinue | 
-            Where-Object { ($_.LastWriteTime -lt (Get-Date).AddDays(-7)) -and !$_.PSIsContainer } | 
-            Remove-Item -Force -ErrorAction SilentlyContinue
-        
-        # Limpar Windows Temp (requer privilégios)
-        $winTemp = "$env:SystemRoot\Temp"
-        if (Test-Path $winTemp) {
-            Get-ChildItem -Path $winTemp -Force -ErrorAction SilentlyContinue | 
-                Where-Object { ($_.LastWriteTime -lt (Get-Date).AddDays(-7)) -and !$_.PSIsContainer } | 
-                Remove-Item -Force -ErrorAction SilentlyContinue
-        }
-        
-        Write-Log "Limpeza concluída" "SUCCESS"
-    } catch {
-        Write-Log "Erro na limpeza de arquivos temporários: $_" "ERROR"
     }
     
     Write-Log "Otimização de desempenho concluída!" "SUCCESS"
@@ -722,20 +759,37 @@ function Clear-SystemCache {
         }
     }
     
+    # Limpar pastas temporárias do usuário e do sistema
+    Write-Log "Limpando pastas TEMP..." "INFO"
+    $tempPaths = @(
+        $env:TEMP,
+        "$env:SystemRoot\Temp",
+        "$env:USERPROFILE\AppData\Local\Temp"
+    )
+    foreach ($tempPath in $tempPaths) {
+        if (Test-Path $tempPath) {
+            Get-ChildItem -Path $tempPath -Force -ErrorAction SilentlyContinue | 
+                Where-Object { ($_.LastWriteTime -lt (Get-Date).AddDays(-7)) } | 
+                Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+        }
+    }
+    
     Write-Log "Limpeza de sistema concluída!" "SUCCESS"
 }
 
 function Test-PCHealth {
     Write-Log "========== Verificando Integridade do Sistema ==========" "INFO"
     
-    # Verificar integridade de arquivos do Windows
-    Write-Log "Verificando integridade de arquivos do sistema..." "INFO"
+    # Verificar integridade de arquivos do Windows com captura de saída
+    Write-Log "Verificando integridade de arquivos do sistema (SFC)..." "INFO"
     try {
-        $sfcResult = sfc /scannow
-        if ($LASTEXITCODE -eq 0) {
+        $sfcOutput = sfc /scannow 2>&1 | Out-String
+        $sfcExitCode = $LASTEXITCODE
+        Write-Log "Saída SFC: $sfcOutput" "INFO"
+        if ($sfcExitCode -eq 0) {
             Write-Log "Verificação SFC concluída sem erros críticos" "SUCCESS"
         } else {
-            Write-Log "SFC encontrou problemas (código: $LASTEXITCODE)" "WARNING"
+            Write-Log "SFC encontrou problemas (código: $sfcExitCode)" "WARNING"
         }
     } catch {
         Write-Log "Erro ao executar SFC: $_" "ERROR"
@@ -764,7 +818,7 @@ function Test-PCHealth {
 }
 
 # ============================================
-# MENU PRINCIPAL
+# MENU PRINCIPAL COM DESCRIÇÕES INTERATIVAS
 # ============================================
 
 function Show-MainMenu {
@@ -772,7 +826,7 @@ function Show-MainMenu {
         Clear-Host
         Write-Host "=================================================================" -ForegroundColor Cyan
         Write-Host "                 WINDOWS 11/10 DEBLOATER SCRIPT" -ForegroundColor Yellow
-        Write-Host "                    Versão 2.0 - Corrigida" -ForegroundColor Yellow
+        Write-Host "                    Versão 2.1 - Melhorias" -ForegroundColor Yellow
         Write-Host "=================================================================" -ForegroundColor Cyan
         Write-Host ""
         
@@ -780,18 +834,20 @@ function Show-MainMenu {
         Write-Host "  1. Desabilitar Telemetria" -ForegroundColor White
         Write-Host "  2. Configurar Privacidade (inclui Cortana)" -ForegroundColor White
         Write-Host "  3. Desabilitar Serviços de Telemetria" -ForegroundColor White
+        Write-Host "  R1. Restaurar Telemetria (padrões do Windows)" -ForegroundColor DarkYellow
+        Write-Host "  R3. Restaurar Serviços (automático)" -ForegroundColor DarkYellow
         Write-Host ""
         
         Write-Host "--- OTIMIZAÇÃO ---" -ForegroundColor Magenta
         Write-Host "  4. Remover Bloatware" -ForegroundColor White
-        Write-Host "  5. Otimizar Desempenho" -ForegroundColor White
-        Write-Host "  6. Desabilitar Microsoft Edge (recomendado)" -ForegroundColor White
+        Write-Host "  5. Otimizar Desempenho (animações, energia)" -ForegroundColor White
+        Write-Host "  6. Desabilitar Microsoft Edge" -ForegroundColor White
         Write-Host ""
         
         Write-Host "--- MANUTENÇÃO ---" -ForegroundColor Blue
         Write-Host "  7. Criar Ponto de Restauração" -ForegroundColor White
         Write-Host "  8. Limpar Cache do Sistema" -ForegroundColor White
-        Write-Host "  9. Verificar Integridade do Sistema" -ForegroundColor White
+        Write-Host "  9. Verificar Integridade do Sistema (SFC)" -ForegroundColor White
         Write-Host ""
         
         Write-Host "--- OPÇÕES ---" -ForegroundColor Yellow
@@ -799,43 +855,42 @@ function Show-MainMenu {
         Write-Host ""
         Write-Host "=================================================================" -ForegroundColor Cyan
         
-        $choice = Read-Host "Digite sua escolha (0-9)"
+        $choice = Read-Host "Digite sua escolha (0-9, R1, R3)"
+        
+        # Função auxiliar para executar ação com confirmação e ponto de restauração
+        function Invoke-ActionWithRestorePoint {
+            param([ScriptBlock]$Action, [string]$Description)
+            Write-Host "`n$Description" -ForegroundColor Cyan
+            $confirm = Read-Host "Confirmar execução? (S/N)"
+            if ($confirm -notmatch '^[Ss]') { return }
+            if (New-SystemRestorePoint) {
+                & $Action
+            } else {
+                Write-Log "Ponto de restauração falhou. Ação cancelada." "ERROR"
+            }
+            pause
+        }
         
         switch ($choice) {
-            "1" { 
-                if (New-SystemRestorePoint) { Disable-WindowsTelemetry }
+            "1" { Invoke-ActionWithRestorePoint -Action { Disable-WindowsTelemetry } -Description "Desabilitar Telemetria do Windows" }
+            "2" { Invoke-ActionWithRestorePoint -Action { Set-PrivacySettings } -Description "Configurar Privacidade" }
+            "3" { Invoke-ActionWithRestorePoint -Action { Disable-WindowsServices } -Description "Desabilitar Serviços de Telemetria" }
+            "4" { Invoke-ActionWithRestorePoint -Action { Remove-WindowsBloatware } -Description "Remover Bloatware" }
+            "5" { Invoke-ActionWithRestorePoint -Action { Optimize-Performance } -Description "Otimizar Desempenho" }
+            "6" { Invoke-ActionWithRestorePoint -Action { Disable-MicrosoftEdge } -Description "Desabilitar Microsoft Edge" }
+            "7" { New-SystemRestorePoint; pause }
+            "8" { Clear-SystemCache; pause }
+            "9" { Test-PCHealth; pause }
+            "R1" { 
+                Write-Host "Restaurar Telemetria para valores padrão do Windows." -ForegroundColor Yellow
+                $confirm = Read-Host "Tem certeza? (S/N)"
+                if ($confirm -match '^[Ss]') { Restore-TelemetryDefaults }
                 pause
             }
-            "2" { 
-                if (New-SystemRestorePoint) { Set-PrivacySettings }
-                pause
-            }
-            "3" { 
-                if (New-SystemRestorePoint) { Disable-WindowsServices }
-                pause
-            }
-            "4" { 
-                if (New-SystemRestorePoint) { Remove-WindowsBloatware }
-                pause
-            }
-            "5" { 
-                if (New-SystemRestorePoint) { Optimize-Performance }
-                pause
-            }
-            "6" { 
-                if (New-SystemRestorePoint) { Disable-MicrosoftEdge }
-                pause
-            }
-            "7" { 
-                New-SystemRestorePoint
-                pause
-            }
-            "8" { 
-                Clear-SystemCache
-                pause
-            }
-            "9" { 
-                Test-PCHealth
+            "R3" { 
+                Write-Host "Restaurar serviços desabilitados para inicialização automática." -ForegroundColor Yellow
+                $confirm = Read-Host "Tem certeza? (S/N)"
+                if ($confirm -match '^[Ss]') { Restore-ServicesDefaults }
                 pause
             }
             "0" { 
