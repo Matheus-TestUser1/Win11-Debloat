@@ -37,7 +37,7 @@
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate></Setter.Value></Setter>
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid Background="#F4F7F9">
         <Grid.ColumnDefinitions><ColumnDefinition Width="200"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <Border Background="#112D39" Padding="20,28">
             <DockPanel LastChildFill="True">
