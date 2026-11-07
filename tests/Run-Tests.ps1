@@ -3,7 +3,7 @@
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
 $parseFailures=@()
-foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -File -Include '*.ps1','*.psm1') {
+foreach ($file in Get-ChildItem -LiteralPath $root -Recurse -File | Where-Object { $_.Extension -in @('.ps1','.psm1') }) {
     $tokens=$null; $errors=$null
     $null=[Management.Automation.Language.Parser]::ParseFile($file.FullName,[ref]$tokens,[ref]$errors)
     $parseFailures+=@($errors)

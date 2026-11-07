@@ -16,6 +16,9 @@ jobs:
       - name: Load, bind, simulate and render the native WPF interface
         shell: powershell
         run: ./src/Debloat.Gui.ps1 -SmokeTest
+      - name: Verify real registry API inside a disposable HKCU test key
+        shell: powershell
+        run: ./tests/Windows-Registry.Tests.ps1
       - name: Save native GUI screenshot
         if: always()
         uses: actions/upload-artifact@v4
