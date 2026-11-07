@@ -6,7 +6,9 @@ $root=Split-Path -Parent $PSScriptRoot
 $fixture=Join-Path ([IO.Path]::GetTempPath()) ('Win11Debloat download test '+[guid]::NewGuid().ToString('N'))
 $before=[Net.ServicePointManager]::SecurityProtocol
 try {
-    $result=& (Join-Path $root 'bootstrap.ps1') -Ref $Ref -InstallRoot $fixture -DownloadOnly
+    # Load the bootstrap from GitHub as text, just like the pasted command.
+    $online=Invoke-RestMethod -Uri "https://raw.githubusercontent.com/Matheus-TestUser1/Win11-Debloat/$Ref/bootstrap.ps1" -TimeoutSec 60
+    $result=& ([scriptblock]::Create([string]$online)) -Ref $Ref -InstallRoot $fixture -DownloadOnly
     if ($result.Launched -or $result.Commit -ne $Ref) { throw 'O download não respeitou a revisão ou iniciou a GUI sem autorização.' }
     if ([Net.ServicePointManager]::SecurityProtocol -ne $before) { throw 'O protocolo TLS da sessão não foi restaurado.' }
     $downloaded=Join-Path $result.Path 'win11debloater.ps1'
