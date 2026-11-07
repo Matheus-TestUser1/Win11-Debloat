@@ -1,6 +1,6 @@
 # Win11 Debloat — interface WPF
 
-Ferramenta local de ajustes do Windows 10/11, escrita em PowerShell 5.1, com interface gráfica nativa em português. A versão 3.0 separa o catálogo de ações, a execução e a interface.
+Ferramenta local de ajustes do Windows 10/11 de 64 bits, escrita em PowerShell 5.1, com interface gráfica nativa em português. A versão 3.0 separa o catálogo de ações, a execução e a interface.
 
 > Versão em revisão. Os testes automatizados usam operações de sistema simuladas. Valide os ajustes reais em uma máquina virtual Windows com snapshot antes de usar em produção. Não há promessa de aumento de FPS ou de eliminação completa da telemetria.
 
@@ -27,7 +27,7 @@ Se o UAC solicitar credenciais de **outro usuário**, os ajustes HKCU e a remoç
 - Seleção individual persistente ao trocar de categoria; nenhum ajuste selecionado ao abrir.
 - **Perfil básico**: marca somente diagnóstico opcional e anúncios/sugestões.
 - **Simular**: mostra as ações planejadas sem alterar registro, serviços, aplicativos ou criar backup/ponto de restauração. Não verifica a aplicabilidade de cada política.
-- Execução em runspace separado, progresso por opção e registros de sucesso, falha e itens ignorados.
+- Execução em runspace separado, progresso por opção e registros de sucesso, falha e itens ignorados. Um mutex impede aplicações/restaurações simultâneas, inclusive em outras janelas.
 - Ponto de restauração marcado por padrão na GUI. Se não for possível confirmar sua criação, a execução é interrompida. Verifique a Proteção do Sistema; o Windows limita a frequência de criação. Desmarcar essa opção exige revisar a confirmação.
 - Backup persistente dos valores originais de registro, dos serviços e do plano de energia, gravado **antes** das alterações.
 - Restauração do último backup pendente. Restaure sessões da mais recente para a mais antiga.
@@ -89,6 +89,8 @@ A ferramenta não garante compatibilidade com cada versão, edição, política 
 # Somente no Windows: carregar XAML, testar bindings, filtros e worker de simulação
 powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\src\Debloat.Gui.ps1 -SmokeTest
 ```
+
+O teste `Windows-Registry.Tests.ps1` verifica a API real de registro somente em uma chave HKCU descartável, removida ao final, sem alterar políticas ou serviços.
 
 O teste WPF gera `gui-smoke.png` a partir da janela nativa, sem executar ajustes reais. O workflow **Windows PowerShell and WPF** roda os testes em Windows PowerShell 5.1 e PowerShell em Linux e guarda a captura da interface como artefato. Ele não valida alterações reais em Windows.
 

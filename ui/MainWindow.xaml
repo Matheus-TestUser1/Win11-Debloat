@@ -93,7 +93,14 @@
                 <Grid Margin="0,0,16,0">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                     <Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBox x:Name="SearchBox" ToolTip="Buscar opções pelo nome ou descrição" AutomationProperties.Name="Buscar opções"/>
+                        <Grid>
+                            <TextBox x:Name="SearchBox" ToolTip="Buscar opções pelo nome ou descrição" AutomationProperties.Name="Buscar opções"/>
+                            <TextBlock Text="Buscar opções..." Foreground="#6B8390" Margin="13,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers>
+                                </Style></TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
                         <Button x:Name="RecommendedButton" Grid.Column="1" Content="Perfil básico" Margin="8,0,0,0" ToolTip="Seleciona apenas diagnóstico opcional e sugestões"/>
                     </Grid>
                     <ListBox x:Name="ActionsList" Grid.Row="1" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">

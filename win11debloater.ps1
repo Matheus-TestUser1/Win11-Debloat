@@ -23,6 +23,7 @@ if ($Console -or $List -or $Action -or $RestoreBackup -or $WhatIfPreference) {
 if ([Environment]::OSVersion.Platform -ne 'Win32NT' -or [Environment]::OSVersion.Version.Major -lt 10) {
     throw 'A interface requer Windows 10 ou 11. Use -List para consultar o catálogo.'
 }
+if (-not [Environment]::Is64BitOperatingSystem) { throw 'A interface requer Windows de 64 bits.' }
 $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
 $principal=New-Object Security.Principal.WindowsPrincipal($identity)
 $admin=$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
