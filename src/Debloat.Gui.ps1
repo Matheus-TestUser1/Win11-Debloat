@@ -156,7 +156,7 @@ function Receive-UiEvents {
                                 $option.Availability=if($installed){$installedCount++; 'Instalado nesta conta'}else{'Não instalado nesta conta'}
                             }
                         }
-                        $script:Controls.AppsCount.Text="$installedCount encontrados"
+                        $script:Controls.AppsCount.Text=if($installedCount -eq 1){'1 encontrado'}else{"$installedCount encontrados"}
                         $script:Controls.StatusLabel.Text='Análise concluída. Nenhum ajuste aplicado.'
                         Add-UiLog 'Computador e aplicativos analisados. Nenhum ajuste aplicado.'
                     }
@@ -166,13 +166,13 @@ function Receive-UiEvents {
                     }
                     Apply {
                         $r=$event.Data
-                        $script:Controls.StatusLabel.Text="Resultado: $($r.Success) concluídos • $($r.Failed) falhas • $($r.Skipped) ignorados."
+                        $script:Controls.StatusLabel.Text="Concluídos: $($r.Success) • Falhas: $($r.Failed) • Ignorados: $($r.Skipped)."
                         Add-UiLog $script:Controls.StatusLabel.Text
                         Add-UiLog "Backup: $($r.BackupPath)"
                         $script:Controls.WorkProgress.Value=100
                     }
                     Restore {
-                        $script:Controls.StatusLabel.Text="Restauração: $($event.Data.Restored) ajustes • $($event.Data.Failed) falhas."
+                        $script:Controls.StatusLabel.Text="Ajustes restaurados: $($event.Data.Restored) • Falhas: $($event.Data.Failed)."
                         Add-UiLog $script:Controls.StatusLabel.Text
                     }
                 }
@@ -218,7 +218,7 @@ $script:Controls.RestoreButton.add_Click({
         })
         if (-not $pending.Count) { Add-UiLog 'Nenhum backup de ajustes pendente para restaurar.'; return }
         $backup=$pending[0]
-        if ([Windows.MessageBox]::Show($script:Window,"Restaurar os valores salvos em $($backup.Name)?`n`nSomente registro, serviços e energia serão restaurados.",'Restaurar último ajuste','YesNo','Question') -eq 'Yes') { Start-UiOperation -Mode Restore -BackupPath $backup.FullName }
+        if ([Windows.MessageBox]::Show($script:Window,"Restaurar os valores salvos em $($backup.Name)?`n`nSomente registro, serviços e energia serão restaurados.",'Restaurar último backup','YesNo','Question') -eq 'Yes') { Start-UiOperation -Mode Restore -BackupPath $backup.FullName }
     } catch { Add-UiLog $_.Exception.Message 'Error' }
 })
 $script:Controls.OpenLogsButton.add_Click({

@@ -123,15 +123,15 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
                             <TextBlock Text="Antes de aplicar" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock Text="Nada é selecionado automaticamente. O perfil básico marca só dois ajustes de privacidade." Foreground="#58717F" FontSize="12" TextWrapping="Wrap" Margin="0,10,0,15"/>
+                            <TextBlock Text="Nenhum ajuste é selecionado ao abrir. O perfil básico marca dois ajustes de privacidade." Foreground="#58717F" FontSize="12" TextWrapping="Wrap" Margin="0,10,0,15"/>
                             <TextBlock Text="SUA SELEÇÃO" FontSize="10" FontWeight="SemiBold" Foreground="#58717F"/>
                             <TextBlock x:Name="SummaryLabel" Text="Selecione as opções ao lado." TextWrapping="Wrap" FontSize="12" Margin="0,8,0,16"/>
                             <Separator Background="#E1E9EE" Margin="0,0,0,16"/>
                             <CheckBox x:Name="RestorePointCheck" IsChecked="True"><TextBlock Text="Criar ponto de restauração antes de aplicar" TextWrapping="Wrap" FontSize="12" Width="180"/></CheckBox>
                             <TextBlock Text="Se o Windows não conseguir criá-lo, a aplicação será interrompida. O backup de ajustes é salvo em toda execução." TextWrapping="Wrap" FontSize="11" Foreground="#58717F" Margin="0,10,0,16"/>
-                            <Button x:Name="RestoreButton" Content="Restaurar último ajuste" Margin="0,0,0,8"/>
+                            <Button x:Name="RestoreButton" Content="Restaurar último backup" Margin="0,0,0,8"/>
                             <Button x:Name="OpenLogsButton" Content="Abrir backups e registros" Margin="0,0,0,8"/>
-                            <TextBlock Text="O backup desfaz registro, serviços e plano de energia. Apps removidos, arquivos excluídos e reparos do SFC não são desfeitos por ele." TextWrapping="Wrap" FontSize="11" Foreground="#58717F" Margin="0,4,0,0"/>
+                            <TextBlock Text="O backup restaura ajustes do registro, serviços e plano de energia. Apps removidos, arquivos excluídos e reparos do SFC não são desfeitos por ele." TextWrapping="Wrap" FontSize="11" Foreground="#58717F" Margin="0,4,0,0"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
