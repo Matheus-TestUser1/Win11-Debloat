@@ -1,21 +1,9 @@
-# Security Policy
+# Segurança
 
-## Supported Versions
+A versão 3.0 está em revisão. A versão 2.1 não recebe novos recursos nesta branch.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+O programa altera políticas, serviços e aplicativos do Windows com privilégios administrativos. Nenhuma varredura de antivírus garante compatibilidade ou ausência de falhas. Não execute cópias de origem desconhecida nem comandos que baixem e executem scripts sem revisão.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+Para relatar um problema, abra uma issue com a versão do Windows, a revisão do código, as opções selecionadas e os trechos relevantes do registro. Remova nomes de usuário, SID, caminhos pessoais e outros dados privados. Não publique informações sensíveis em relatórios públicos.
 
-## Reporting a Vulnerability
-
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Não edite nem substitua backups JSON por arquivos de terceiros. O programa valida o computador, usuário e alvos permitidos, mas os backups locais devem permanecer sob seu controle.
