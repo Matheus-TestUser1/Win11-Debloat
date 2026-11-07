@@ -4,6 +4,10 @@ Ferramenta local de ajustes do Windows 10/11 de 64 bits, escrita em PowerShell 5
 
 > Versão em revisão. Os testes automatizados usam operações de sistema simuladas. Valide os ajustes reais em uma máquina virtual Windows com snapshot antes de usar em produção. Não há promessa de aumento de FPS ou de eliminação completa da telemetria.
 
+![Interface WPF em uma simulação no Windows](docs/gui-preview.png)
+
+*Captura real do teste WPF; nenhum ajuste do Windows foi aplicado.*
+
 ## Abrir a interface
 
 1. Baixe o ZIP **da branch que você quer testar** pelo botão **Code → Download ZIP**, ou clone o repositório.
