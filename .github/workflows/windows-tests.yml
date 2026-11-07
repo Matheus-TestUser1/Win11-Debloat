@@ -1,0 +1,32 @@
+name: Windows PowerShell and WPF
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse and test core with mocked Windows operations
+        shell: powershell
+        run: ./tests/Run-Tests.ps1
+      - name: Load, bind, simulate and render the native WPF interface
+        shell: powershell
+        run: ./src/Debloat.Gui.ps1 -SmokeTest
+      - name: Save native GUI screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-wpf-preview
+          path: gui-smoke.png
+          if-no-files-found: warn
+  powershell-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Core regression tests
+        shell: pwsh
+        run: ./tests/Run-Tests.ps1

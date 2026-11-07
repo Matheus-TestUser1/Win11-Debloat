@@ -1,0 +1,10 @@
+interface:
+  - 'ui/**'
+  - 'src/Debloat.Gui.ps1'
+core:
+  - 'src/Debloat.Core.psm1'
+tests:
+  - 'tests/**'
+  - '.github/workflows/windows-tests.yml'
+documentation:
+  - '*.md'
