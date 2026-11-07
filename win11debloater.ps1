@@ -1,4 +1,5 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
+# ASCII by design: compatible with both Windows PowerShell 5.1 files and IEX input.
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
     [switch]$Console,
@@ -12,7 +13,7 @@ $ErrorActionPreference='Stop'
 # script has no local module directory, so fetch the complete project first.
 if ([string]::IsNullOrWhiteSpace($PSScriptRoot)) {
     if ($Console -or $List -or $Action -or $RestoreBackup -or $WhatIfPreference) {
-        throw 'Para usar parâmetros de console, baixe o projeto completo primeiro.'
+        throw 'Baixe o projeto completo para usar o modo de console.'
     }
     $bootstrap=Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Matheus-TestUser1/Win11-Debloat/main/bootstrap.ps1' -TimeoutSec 60
     & ([scriptblock]::Create([string]$bootstrap))
@@ -31,9 +32,9 @@ if ($Console -or $List -or $Action -or $RestoreBackup -or $WhatIfPreference) {
 }
 
 if ([Environment]::OSVersion.Platform -ne 'Win32NT' -or [Environment]::OSVersion.Version.Major -lt 10) {
-    throw 'A interface requer Windows 10 ou 11. Use -List para consultar o catálogo.'
+    throw 'Use Windows 10 ou 11 para abrir a interface.'
 }
-if (-not [Environment]::Is64BitOperatingSystem) { throw 'A interface requer Windows de 64 bits.' }
+if (-not [Environment]::Is64BitOperatingSystem) { throw 'Use Windows de 64 bits para abrir a interface.' }
 $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
 $principal=New-Object Security.Principal.WindowsPrincipal($identity)
 $admin=$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -46,12 +47,12 @@ if (-not $admin -or $PSVersionTable.PSEdition -ne 'Desktop' -or [Threading.Threa
     try {
         if ($admin) { $null=Start-Process -FilePath $windowsPowerShell -ArgumentList $arguments -PassThru }
         else { $null=Start-Process -FilePath $windowsPowerShell -ArgumentList $arguments -Verb RunAs -PassThru }
-    } catch { throw "Não foi possível abrir a interface elevada: $($_.Exception.Message)" }
+    } catch { throw "Falha ao abrir a interface como administrador: $($_.Exception.Message)" }
     return
 }
 try { & (Join-Path $PSScriptRoot 'src\Debloat.Gui.ps1') }
 catch {
     Add-Type -AssemblyName PresentationFramework
-    $null=[Windows.MessageBox]::Show($_.Exception.Message,'Win11 Debloat — erro','OK','Error')
+    $null=[Windows.MessageBox]::Show($_.Exception.Message,'Win11 Debloat - erro','OK','Error')
     throw
 }

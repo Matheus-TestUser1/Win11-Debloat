@@ -1,7 +1,11 @@
 ﻿#Requires -Version 5.1
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
-foreach ($name in @('run.ps1','win11debloater.ps1')) {
+foreach ($name in @('bootstrap.ps1','run.ps1','win11debloater.ps1')) {
+    $bytes=[IO.File]::ReadAllBytes((Join-Path $root $name))
+    if (@($bytes | Where-Object { $_ -gt 127 }).Count) { throw "$name precisa ser ASCII para funcionar como arquivo e texto de IEX no PowerShell 5.1." }
+    $null=[scriptblock]::Create([Text.Encoding]::UTF8.GetString($bytes))
+    if ($name -eq 'bootstrap.ps1') { Write-Host 'PASS: online bootstrap has no BOM and parses directly as IEX input.'; continue }
     $source=Get-Content -LiteralPath (Join-Path $root $name) -Raw -Encoding UTF8
     & {
         param($Source,$Name)
