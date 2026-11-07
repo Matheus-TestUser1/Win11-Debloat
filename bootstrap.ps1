@@ -1,4 +1,5 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
+# ASCII by design: compatible with both Windows PowerShell 5.1 files and IEX input.
 [CmdletBinding()]
 param(
     [ValidatePattern('^[a-zA-Z0-9_./-]+$')][string]$Ref='main',
@@ -12,7 +13,7 @@ param(
     $ErrorActionPreference='Stop'
     $ProgressPreference='SilentlyContinue'
     if (-not $DownloadOnly -and ([Environment]::OSVersion.Platform -ne 'Win32NT' -or [Environment]::OSVersion.Version.Major -lt 10 -or -not [Environment]::Is64BitOperatingSystem)) {
-        throw 'A interface requer Windows 10 ou 11 de 64 bits.'
+        throw 'Use Windows 10 ou 11 de 64 bits para abrir a interface.'
     }
     if ([string]::IsNullOrWhiteSpace($InstallRoot)) {
         $InstallRoot=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Win11Debloat\Versions'
@@ -32,7 +33,7 @@ param(
         # mixing a new entry point with an old module if main changes during download.
         $commit=Invoke-RestMethod -Uri "https://api.github.com/repos/$repository/commits/$encodedRef" -Headers $headers -TimeoutSec 60
         $revision=[string]$commit.sha
-        if ($revision -notmatch '^[0-9a-f]{40}$') { throw 'O GitHub não retornou uma revisão válida.' }
+        if ($revision -notmatch '^[0-9a-f]{40}$') { throw 'O GitHub retornou um SHA fora do formato esperado.' }
         Write-Host "Baixando Win11 Debloat: $repository ($revision)" -ForegroundColor Cyan
         $archive=Join-Path $stage 'source.zip'
         Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/$repository/archive/$revision.zip" -OutFile $archive -TimeoutSec 120
@@ -43,7 +44,7 @@ param(
         foreach ($relative in $required) {
             $file=Join-Path $source $relative
             if (-not (Test-Path -LiteralPath $file -PathType Leaf) -or (Get-Item -LiteralPath $file).Length -eq 0) {
-                throw "Download incompleto: arquivo ausente ou vazio ($relative). A interface não será iniciada."
+                throw "Download incompleto: arquivo ausente ou vazio ($relative). O programa deixou de iniciar."
             }
         }
         # Every launch gets its own complete directory. Never overwrite files used by
@@ -63,7 +64,7 @@ param(
     if (-not [Environment]::Is64BitProcess) { $powershell=Join-Path $env:SystemRoot 'Sysnative\WindowsPowerShell\v1.0\powershell.exe' }
     $entry=Join-Path $installedPath 'win11debloater.ps1'
     $arguments='-NoProfile -STA -ExecutionPolicy Bypass -File "{0}"' -f $entry
-    Write-Host 'Download concluído. Abrindo a interface; aceite a solicitação de administrador.' -ForegroundColor Green
+    Write-Host 'Arquivos baixados. Abrindo a interface; confirme o pedido de administrador.' -ForegroundColor Green
     try { $null=Start-Process -FilePath $powershell -ArgumentList $arguments -Verb RunAs -PassThru -ErrorAction Stop }
-    catch { throw "Não foi possível abrir a interface. Arquivos disponíveis em '$installedPath'. $($_.Exception.Message)" }
+    catch { throw "Erro ao abrir a interface. Arquivos em '$installedPath'. $($_.Exception.Message)" }
 } $Ref $InstallRoot $DownloadOnly
