@@ -8,6 +8,16 @@ param(
     [switch]$CreateRestorePoint
 )
 $ErrorActionPreference='Stop'
+# Compatibility with the original paste/download/execute workflow: an in-memory
+# script has no local module directory, so fetch the complete project first.
+if ([string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+    if ($Console -or $List -or $Action -or $RestoreBackup -or $WhatIfPreference) {
+        throw 'Para usar parâmetros de console, baixe o projeto completo primeiro.'
+    }
+    $bootstrap=Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/Matheus-TestUser1/Win11-Debloat/main/bootstrap.ps1' -TimeoutSec 60
+    & ([scriptblock]::Create([string]$bootstrap))
+    return
+}
 Import-Module (Join-Path $PSScriptRoot 'src\Debloat.Core.psm1') -Force
 
 if ($Console -or $List -or $Action -or $RestoreBackup -or $WhatIfPreference) {

@@ -8,7 +8,34 @@ Ferramenta local de ajustes do Windows 10/11 de 64 bits, escrita em PowerShell 5
 
 *Captura real do teste WPF; nenhum ajuste do Windows foi aplicado.*
 
-## Abrir a interface
+## Abrir com um comando no PowerShell
+
+Cole este comando no PowerShell do Windows:
+
+```powershell
+irm https://raw.githubusercontent.com/Matheus-TestUser1/Win11-Debloat/main/bootstrap.ps1 | iex
+```
+
+O iniciador baixa o projeto completo do seu repositório, fixa o download em uma única revisão, confere os arquivos necessários e pede autorização de administrador para abrir a GUI. **Abrir a interface não aplica ajustes.** Você escolhe as opções dentro do programa.
+
+O endereço acima executa código obtido do repositório. Consulte o [iniciador](bootstrap.ps1) antes de executar. O fluxo usa HTTPS e não exige alterar permanentemente a política de execução do Windows. O comando direto de `run.ps1` também aceita carregamento pela internet:
+
+```powershell
+irm https://raw.githubusercontent.com/Matheus-TestUser1/Win11-Debloat/main/run.ps1 | iex
+```
+
+Versões baixadas ficam em `%LOCALAPPDATA%\Win11Debloat\Versions`, separadas dos backups e registros. Cada execução baixa uma cópia completa nova; uma janela já aberta não tem seus arquivos substituídos. Para remover cópias antigas, feche as janelas e apague somente as respectivas pastas em `Versions`, preservando `Backups`.
+
+Para baixar e revisar os arquivos antes de abrir:
+
+```powershell
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Matheus-TestUser1/Win11-Debloat/main/bootstrap.ps1 -OutFile .\bootstrap.ps1
+.\bootstrap.ps1 -DownloadOnly
+```
+
+Os antigos links encurtados não são mais o endereço recomendado; este projeto não controla os redirecionamentos deles.
+
+## Abrir a cópia local
 
 1. Baixe o ZIP **da branch que você quer testar** pelo botão **Code → Download ZIP**, ou clone o repositório.
 2. Extraia **todos os arquivos** para uma pasta local.
@@ -21,7 +48,7 @@ Também é possível iniciar pelo Windows PowerShell:
 powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\win11debloater.ps1
 ```
 
-A política Bypass vale somente para esse processo. Não é necessário instalar Python, Node, Electron ou PowerShell 7. A interface usa WPF do .NET Framework incluído no Windows. Baixe e revise os arquivos locais; os atalhos antigos que executavam URLs encurtadas foram removidos.
+A política Bypass vale somente para esse processo. Não é necessário instalar Python, Node, Electron ou PowerShell 7. A interface usa WPF do .NET Framework incluído no Windows. O iniciador local usa os próprios arquivos; o iniciador online baixa a árvore completa antes de abrir a interface.
 
 Se o UAC solicitar credenciais de **outro usuário**, os ajustes HKCU e a remoção de aplicativos afetarão essa outra conta. Execute a partir da conta administrativa que deseja configurar. Em computadores gerenciados, políticas da organização podem prevalecer.
 
@@ -51,7 +78,7 @@ Se o UAC solicitar credenciais de **outro usuário**, os ajustes HKCU e a remoç
 | Mensagens de sucesso de comandos externos | Verifica códigos de saída e reporta falhas; preserva saída do SFC |
 | Menu de terminal obrigatório | GUI por padrão; catálogo, execução e restauração também disponíveis por linha de comando |
 
-Defender, Firewall, Windows Update, Microsoft Store, App Installer, Terminal, câmera, captura de tela, serviços de busca e impressão ficam fora do catálogo de remoções. Não há encerramento forçado de processos do Edge nem downloads executados pelo programa.
+Defender, Firewall, Windows Update, Microsoft Store, App Installer, Terminal, câmera, captura de tela, serviços de busca e impressão ficam fora do catálogo de remoções. Não há encerramento forçado de processos do Edge nem downloads feitos pelo motor de ajustes. Somente o iniciador online baixa a cópia do projeto.
 
 ## Linha de comando
 
@@ -93,6 +120,8 @@ A ferramenta não garante compatibilidade com cada versão, edição, política 
 # Somente no Windows: carregar XAML, testar bindings, filtros e worker de simulação
 powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File .\src\Debloat.Gui.ps1 -SmokeTest
 ```
+
+O teste `Bootstrap.Tests.ps1` baixa uma revisão exata para uma pasta de teste com espaços no nome e abre somente o teste inofensivo da GUI baixada. Não aplica ajustes nem solicita elevação.
 
 O teste `Windows-Registry.Tests.ps1` verifica a API real de registro somente em uma chave HKCU descartável, removida ao final, sem alterar políticas ou serviços.
 

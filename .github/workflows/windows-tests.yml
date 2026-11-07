@@ -12,13 +12,20 @@ jobs:
       - uses: actions/checkout@v4
       - name: Parse and test core with mocked Windows operations
         shell: powershell
-        run: ./tests/Run-Tests.ps1
+        run: |
+          ./tests/Run-Tests.ps1
+          ./tests/Launcher.Tests.ps1
       - name: Load, bind, simulate and render the native WPF interface
         shell: powershell
         run: ./src/Debloat.Gui.ps1 -SmokeTest
       - name: Verify real registry API inside a disposable HKCU test key
         shell: powershell
         run: ./tests/Windows-Registry.Tests.ps1
+      - name: Download an exact revision and smoke-test its GUI without applying tweaks
+        shell: powershell
+        env:
+          SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: ./tests/Bootstrap.Tests.ps1 -Ref $env:SOURCE_REVISION
       - name: Save native GUI screenshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -32,4 +39,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Core regression tests
         shell: pwsh
-        run: ./tests/Run-Tests.ps1
+        run: |
+          ./tests/Run-Tests.ps1
+          ./tests/Launcher.Tests.ps1
