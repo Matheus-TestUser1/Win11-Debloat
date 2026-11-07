@@ -106,8 +106,14 @@ function Get-DebloatRegistrySnapshot {
 
 function Set-DebloatRegistryValue {
     param([string]$Path, [string]$Name, $Value, [string]$Type)
-    $null = New-Item -Path $Path -Force -ErrorAction Stop
-    $null = New-ItemProperty -LiteralPath $Path -Name $Name -Value $Value -PropertyType $Type -Force -ErrorAction Stop
+    # Registry New-Item -Force can replace existing keys and erase sibling values.
+    # CreateSubKey opens existing keys without clearing them and creates missing parents.
+    $parts=$Path -split ':\\',2
+    if ($parts.Count -ne 2 -or $parts[0] -notin @('HKLM','HKCU')) { throw 'Caminho de registro inválido.' }
+    $base=if($parts[0] -eq 'HKLM'){[Microsoft.Win32.Registry]::LocalMachine}else{[Microsoft.Win32.Registry]::CurrentUser}
+    $key=$base.CreateSubKey($parts[1],$true)
+    try { $key.SetValue($Name,$Value,[Microsoft.Win32.RegistryValueKind]$Type) }
+    finally { $key.Close() }
 }
 
 function Get-DebloatServiceSnapshot {
