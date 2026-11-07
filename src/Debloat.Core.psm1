@@ -166,7 +166,7 @@ function Get-DebloatTemporaryFiles {
     }
 }
 
-function Invoke-DebloatApply {
+function Invoke-DebloatApplyInternal {
     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
     param(
         [Parameter(Mandatory=$true)][string[]]$ActionIds,
@@ -298,7 +298,7 @@ function Test-DebloatJournal {
     }
 }
 
-function Restore-DebloatBackup {
+function Restore-DebloatBackupInternal {
     [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
     param([Parameter(Mandatory=$true)][string]$Path, [scriptblock]$OnEvent)
     $journal = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json
@@ -379,6 +379,43 @@ function Get-DebloatSystemInfo {
         MemoryGB=[Math]::Round($os.TotalVisibleMemorySize/1MB,1)
         InstalledApps=$apps
     }
+}
+
+function Invoke-DebloatExclusive {
+    param([scriptblock]$Operation)
+    $mutex=New-Object Threading.Mutex($false,'Global\Win11Debloat-Operations')
+    $acquired=$false
+    try {
+        try { $acquired=$mutex.WaitOne(0) }
+        catch [Threading.AbandonedMutexException] { $acquired=$true }
+        if (-not $acquired) { throw 'Outra aplicação ou restauração já está em andamento. Aguarde terminar.' }
+        & $Operation
+    } finally {
+        if ($acquired) { $mutex.ReleaseMutex() }
+        $mutex.Dispose()
+    }
+}
+
+function Invoke-DebloatApply {
+    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
+    param([Parameter(Mandatory=$true)][string[]]$ActionIds, [switch]$CreateRestorePoint, [scriptblock]$OnEvent)
+    if ($WhatIfPreference) {
+        return Invoke-DebloatApplyInternal -ActionIds $ActionIds -CreateRestorePoint:$CreateRestorePoint -OnEvent $OnEvent -WhatIf
+    }
+    # Validate the whole plan before prompting or acquiring the system-wide operation lock.
+    $null=Get-DebloatPlan -ActionIds $ActionIds
+    if (-not $PSCmdlet.ShouldProcess('Windows e conta atual','Aplicar seleção')) { return }
+    Invoke-DebloatExclusive {
+        Invoke-DebloatApplyInternal -ActionIds $ActionIds -CreateRestorePoint:$CreateRestorePoint -OnEvent $OnEvent -Confirm:$false
+    }
+}
+
+function Restore-DebloatBackup {
+    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
+    param([Parameter(Mandatory=$true)][string]$Path, [scriptblock]$OnEvent)
+    if ($WhatIfPreference) { return Restore-DebloatBackupInternal -Path $Path -OnEvent $OnEvent -WhatIf }
+    if (-not $PSCmdlet.ShouldProcess($Path,'Restaurar ajustes originais')) { return }
+    Invoke-DebloatExclusive { Restore-DebloatBackupInternal -Path $Path -OnEvent $OnEvent -Confirm:$false }
 }
 
 Export-ModuleMember -Function Get-DebloatCatalog,Get-DebloatPlan,Assert-DebloatPlatform,Get-DebloatDataPath,Invoke-DebloatApply,Restore-DebloatBackup,Get-DebloatBackups,Get-DebloatSystemInfo,New-DebloatRestorePoint

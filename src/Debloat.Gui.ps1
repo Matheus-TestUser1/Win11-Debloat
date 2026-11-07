@@ -61,7 +61,7 @@ function Add-UiLog {
 
 function Update-Selection {
     $selected = @($script:Options | Where-Object Selected)
-    $script:Controls.SelectionCount.Text = "$($selected.Count) opções"
+    $script:Controls.SelectionCount.Text = if ($selected.Count -eq 1) { '1 opção' } else { "$($selected.Count) opções" }
     $script:Controls.SummaryLabel.Text = if ($selected.Count) { ($selected.Title | ForEach-Object { "• $_" }) -join "`n`n" } else { 'Selecione as opções ao lado.' }
     $script:Controls.ApplyButton.IsEnabled = -not $script:Busy -and $selected.Count -gt 0
     $script:Controls.PreviewButton.IsEnabled = -not $script:Busy -and $selected.Count -gt 0
@@ -247,7 +247,7 @@ if ($SmokeTest) {
     # Exercise actual WPF bindings, filters and background runspace without changing Windows.
     if ($script:Options.Count -ne @(Get-DebloatCatalog).Count) { throw 'Catálogo incompleto na GUI.' }
     $script:Options[0].Selected=$true
-    if ($script:Controls.SelectionCount.Text -ne '1 opções') { throw 'Binding de seleção não atualizou.' }
+    if ($script:Controls.SelectionCount.Text -ne '1 opção') { throw 'Binding de seleção não atualizou.' }
     $script:Controls.SearchBox.Text='___no_matches___'
     if (@($script:View).Count -ne 0) { throw 'Filtro não funcionou.' }
     $script:Controls.SearchBox.Text=''
@@ -263,8 +263,9 @@ if ($SmokeTest) {
     # Render the actual native window for visual review on the Windows CI runner.
     $script:Window.Show()
     $script:Window.UpdateLayout()
-    $bitmap=New-Object Windows.Media.Imaging.RenderTargetBitmap ([int]$script:Window.ActualWidth),([int]$script:Window.ActualHeight),96,96,([Windows.Media.PixelFormats]::Pbgra32)
-    $bitmap.Render($script:Window)
+    $visual=$script:Window.Content
+    $bitmap=New-Object Windows.Media.Imaging.RenderTargetBitmap ([int]$visual.ActualWidth),([int]$visual.ActualHeight),96,96,([Windows.Media.PixelFormats]::Pbgra32)
+    $bitmap.Render($visual)
     $encoder=New-Object Windows.Media.Imaging.PngBitmapEncoder
     $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
     $stream=[IO.File]::Create((Join-Path (Split-Path -Parent $PSScriptRoot) 'gui-smoke.png'))

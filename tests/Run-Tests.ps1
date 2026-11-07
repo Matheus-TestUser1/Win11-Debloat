@@ -75,6 +75,33 @@ try {
         function script:Get-AppxPackage { param($Name,$ErrorAction) $script:Packages }
         function script:Remove-AppxPackage { param($Package,$ErrorAction) $script:Calls.Add("Remove:$Package") }
 
+        if (-not ('DebloatLockProbe' -as [type])) {
+            Add-Type -TypeDefinition @'
+using System;
+using System.Threading;
+public static class DebloatLockProbe {
+    public static bool CanAcquire() {
+        bool acquired=false;
+        var thread=new Thread(() => {
+            using(var mutex=new Mutex(false,"Global\\Win11Debloat-Operations")) {
+                try { acquired=mutex.WaitOne(0); }
+                catch(AbandonedMutexException) { acquired=true; }
+                if(acquired) mutex.ReleaseMutex();
+            }
+        });
+        thread.Start();
+        if(!thread.Join(3000)) throw new Exception("Mutex probe timed out.");
+        return acquired;
+    }
+}
+'@
+        }
+        Test-Case 'Operações simultâneas são bloqueadas e falhas liberam o mutex' {
+            Invoke-DebloatExclusive { Assert (-not [DebloatLockProbe]::CanAcquire()) 'Operação concorrente permitida.' }
+            Assert ([DebloatLockProbe]::CanAcquire()) 'Mutex não liberado após sucesso.'
+            Assert-Throws {Invoke-DebloatExclusive {throw 'Fixture failure'}} '*Fixture failure*'
+            Assert ([DebloatLockProbe]::CanAcquire()) 'Mutex não liberado após falha.'
+        }
         Test-Case 'Catálogo sem remoção de componentes essenciais' {
             $catalog=@(Get-DebloatCatalog)
             Assert ($catalog.Count -eq @($catalog.Id | Select-Object -Unique).Count) 'IDs duplicados.'
